@@ -1,4 +1,4 @@
 library(testthat)
-library(template)
+library(cehmet)
 
-test_check("template")
+test_check("cehmet")

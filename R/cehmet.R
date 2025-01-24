@@ -1,9 +1,9 @@
 library(git2r)
 
-#' template
+#' cehmet
 #'
-#' Clone a template, change remote origin, push
-#' @param template url to the template repository
+#' Clone a cehmet, change remote origin, push
+#' @param cehmet url to the cehmet repository
 #' @param dest destination remote url
 #' @param public should the new GitHub repository be public or private?
 #'
@@ -14,11 +14,11 @@ library(git2r)
 #' @importFrom gh gh
 #' @examples
 #' \dontrun{
-#' template("https://github.com/NERC-CEH/template",
+#' cehmet("https://github.com/NERC-CEH/cehmet",
 #'          "https://github.com/peterlevy/mypkg")
 #' }
-template <- function(template, dest, public = FALSE, ...){
-  repo <- git2r::clone(template)
+cehmet <- function(cehmet, dest, public = FALSE, ...){
+  repo <- git2r::clone(cehmet)
   git2r::remote_remove(repo, "origin")
   git2r::remote_add(repo, "origin", dest)
 

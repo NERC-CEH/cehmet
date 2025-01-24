@@ -1,0 +1,5 @@
+xfer-vm-03.jasmin.ac.uk
+34 01 * * * . /home/users/bkruijt/.bash_profile; crontamer '/gws/nopw/j04/eddystore/cehmet/scripts/amo_rsync.sh'
+
+Bush Cabin server: pollution@81.136.138.171
+40 16 * * * . /home/pollution/.bash_profile; /home/pollution/data/plevy/bush_rsync.sh

@@ -1,0 +1,5 @@
+SHELL=/bin/bash
+rsync --perms --chmod=ug=rwX -ahrP -e 'ssh -i /home/pollution/.ssh/id_rsa_wop'   --stats --timeout=60 /home/pollution/data/LOGGER_BU/DataLogger/BushCabin_CR1000X_BUMON_30.dat bkruijt@xfer-vm-03.jasmin.ac.uk:/gws/nopw/j04/eddystore/cehmet/data-raw/UK-BUC/current
+rsync --perms --chmod=ug=rwX -ahrP -e 'ssh -i /home/pollution/.ssh/id_rsa_wop'   --stats --timeout=60 /home/pollution/data/LOGGER_BU/DataLogger/BushCabin_CR1000X_BUMON_1min.dat bkruijt@xfer-vm-03.jasmin.ac.uk:/gws/nopw/j04/eddystore/cehmet/data-raw/UK-BUC/current
+rsync --perms --chmod=ug=rwX -ahrP -e 'ssh -i /home/pollution/.ssh/id_rsa_wop'   --stats --timeout=60 /home/pollution/data/LOGGER_EB/MAINMET_EB_30min.dat bkruijt@xfer-vm-03.jasmin.ac.uk:/gws/nopw/j04/eddystore/cehmet/data-raw/UK-EBU/current
+rsync --perms --chmod=ug=rwX -ahrP -e 'ssh -i /home/pollution/.ssh/id_rsa_wop'   --stats --timeout=60 /home/pollution/data/LOGGER_EB/MAINMET_EB_F01.dat bkruijt@xfer-vm-03.jasmin.ac.uk:/gws/nopw/j04/eddystore/cehmet/data-raw/UK-EBU/current

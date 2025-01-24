@@ -1,12 +1,11 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Travis-CI Build Status](https://travis-ci.org/cboettig/template.svg?branch=master)](https://travis-ci.org/cboettig/template) [![Coverage Status](https://coveralls.io/repos/cboettig/template/badge.svg)](https://coveralls.io/r/cboettig/template)
 
 This repository provides the current template I use for new research projects.
 
 Why an R package structure?
 ---------------------------
 
-Academic research isn't software development, and there are many other templates for how to organize a research project. So why follow an R package layout? Simply put, this is because the layout of an R package is familiar to a larger audience and allows me to leverage a rich array of tools that don't exist for more custom approaches.
+Academic research isn't software development, and there are many other cehmets for how to organize a research project. So why follow an R package layout? Simply put, this is because the layout of an R package is familiar to a larger audience and allows me to leverage a rich array of tools that don't exist for more custom approaches.
 
 "But"", you say, "a paper doesn't have unit tests, or documented functions! Surely that's a lot of needless overhead in doing this!?"
 
@@ -16,12 +15,12 @@ While there is certainly no need to use all the elements of a package in every r
 
 As a project grows in size and collaboration, having the more rigid structure offered by a package format becomes increasingly valuable. Packages can automate installation of dependencies, perform checks that changes have not broken code, and provide a modular and highly tested framework for collecting together the three essential elements: data, code, and manuscript-quality documentation, in a powerful and feature-rich environment.
 
-Steps to create the template
+Steps to create the cehmet
 ----------------------------
 
-To use this template, I will usually clone this repo and just remove the `.git` record, starting off a new project accordingly. Here I document the steps used to set up this template from scratch, which permits a slightly more modular approach. If this were fully automated it would be preferable to copying, but has not yet reached that stage.
+To use this cehmet, I will usually clone this repo and just remove the `.git` record, starting off a new project accordingly. Here I document the steps used to set up this cehmet from scratch, which permits a slightly more modular approach. If this were fully automated it would be preferable to copying, but has not yet reached that stage.
 
-The template can be initialized with functions from devtools:
+The cehmet can be initialized with functions from devtools:
 
 ``` r
 devtools::install_github("hadley/devtools")
@@ -31,7 +30,7 @@ library("devtools")
 Configure some default options for `devtools`, see `package?devtools`:
 
 ``` r
-options(devtools.name = "Carl Boettiger", 
+options(devtools.name = "Carl Boettiger",
         devtools.desc.author = "person('Carl', 'Boettiger', email='cboettig@gmail.com', role = c('aut', 'cre'))",
         devtools.desc.license = "MIT + file LICENSE")
 ```
@@ -50,11 +49,11 @@ use_readme_rmd()
 
 Additional modifications and things not yet automated by `devtools`:
 
--   Add the now-required LICENSE template data
+-   Add the now-required LICENSE cehmet data
 -   add `covr` to the suggests list
 
 ``` r
-writeLines(paste("YEAR: ", format(Sys.Date(), "%Y"), "\n", 
+writeLines(paste("YEAR: ", format(Sys.Date(), "%Y"), "\n",
                  "COPYRIGHT HOLDER: ", getOption("devtools.name"), sep=""),
            con="LICENSE")
 
@@ -76,7 +75,7 @@ file=".travis.yml", append=TRUE)
 
 ### Further steps that aren't automated
 
-Further steps aren't yet automated in devtools or by me; as it's easier to add these manually to the template and then use the template when starting a new project.
+Further steps aren't yet automated in devtools or by me; as it's easier to add these manually to the cehmet and then use the cehmet when starting a new project.
 
 -   add the travis shield to README, (as prompted to do by `add_travis()`)
 -   Turn on repo at coveralls.io and add the shield to README
@@ -86,4 +85,4 @@ Further steps aren't yet automated in devtools or by me; as it's easier to add t
 Manuscript elements
 -------------------
 
--   Recent developments in `rmarkdown`, `knitr` and `rticles` packages greatly faciliates using vignettes as full manuscripts. The above step adds only a basic HTML templated vignette. This package includes a template for a latex/pdf manuscript using these tools. The actual template appropriate for a project may be better selected from (possibly my fork of) the `rticles` templates.
+-   Recent developments in `rmarkdown`, `knitr` and `rticles` packages greatly faciliates using vignettes as full manuscripts. The above step adds only a basic HTML cehmetd vignette. This package includes a cehmet for a latex/pdf manuscript using these tools. The actual cehmet appropriate for a project may be better selected from (possibly my fork of) the `rticles` cehmets.
