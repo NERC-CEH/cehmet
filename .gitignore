@@ -4,3 +4,7 @@
 inst/doc
 vignettes/*_cache/
 data-raw
+output
+*.Rout
+scripts/cronjobs.txt
+files.txt

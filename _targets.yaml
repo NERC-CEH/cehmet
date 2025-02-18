@@ -1,0 +1,9 @@
+ceda_to_lev1:
+  script: _targets_ceda_to_lev1.R
+  store: _targets_ceda_to_lev1
+hist_to_lev1:
+  script: _targets_hist_to_lev1.R
+  store: _targets_hist_to_lev1
+curr_to_lev1:
+  script: _targets_curr_to_lev1.R
+  store: _targets_curr_to_lev1
