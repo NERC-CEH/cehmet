@@ -1,5 +1,15 @@
+Bush Cabin server: pollution@81.136.138.171
+40 16 * * * . /home/pollution/.bash_profile; /home/pollution/data/plevy/bush_rsync.sh
+
 xfer-vm-03.jasmin.ac.uk
 34 01 * * * . /home/users/bkruijt/.bash_profile; crontamer '/gws/nopw/j04/eddystore/cehmet/scripts/amo_rsync.sh'
 
-Bush Cabin server: pollution@81.136.138.171
-40 16 * * * . /home/pollution/.bash_profile; /home/pollution/data/plevy/bush_rsync.sh
+cron-01.jasmin.ac.uk
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+TZ=UTC
+34 02 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/ceh_generic/amo_met/amo_update.job'
+34 03 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/dare_uk/plevy/SMUK/scatsar/code/update_swi.job'
+34 04 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/dare_uk/plevy/SMUK/ukv/update_ukv.job'
+34 05 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/dare_uk/plevy/smuk_data/update/update_smuk.job'
+29 01 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/eddystore/era5met/era5_retrieve.job'
+11 05 * * * . $HOME/.bash_profile; crontamer 'sbatch --account=short4hr /gws/nopw/j04/eddystore/era5met/era5_submit.job'

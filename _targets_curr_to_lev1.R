@@ -36,19 +36,10 @@ list(
   tar_target(fname_l_lev1_prev, here("_targets_hist_to_lev1/objects/l_lev1"),
     format = "file"),
 
-  tar_target(fname_names, here("data", "ERA5_to_ICOS.xlsx"), format = "file"),
-  tar_target(fname_era5,
-    "/gws/nopw/j04/eddystore/era5met/data-raw/era5/N55.75_W03.25/monthly/dt.csv",
-    format = "file"
-  ),
   tar_target(
     v_names_for_db,
     read.table(fname_names_db, stringsAsFactors = FALSE)$V1
   ),
-  tar_target(df_names, read_excel(fname_names, sheet = "ceda_to_mainmet")),
-  tar_target(df_names_era5, read_excel(fname_names, sheet = "mainmet_to_era5")),
-
-  tar_target(df_era5, rename_era5(fname_era5, df_names_era5)),
 
   # read all current logger files; track changes in these files via targets so
   # they are re-run if they change.

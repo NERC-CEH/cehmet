@@ -32,19 +32,11 @@ list(
   ),
   tar_target(fname_l_lev1_pre2022, here("_targets_ceda_to_lev1/objects/l_lev1"),
     format = "file"),
-  tar_target(fname_names, here("data", "ERA5_to_ICOS.xlsx"), format = "file"),
-  tar_target(fname_era5,
-    "/gws/nopw/j04/eddystore/era5met/data-raw/era5/N55.75_W03.25/monthly/dt.csv",
-    format = "file"
-  ),
+
   tar_target(
     v_names_for_db,
     read.table(fname_names_db, stringsAsFactors = FALSE)$V1
   ),
-  tar_target(df_names, read_excel(fname_names, sheet = "ceda_to_mainmet")),
-  tar_target(df_names_era5, read_excel(fname_names, sheet = "mainmet_to_era5")),
-
-  tar_target(df_era5, rename_era5(fname_era5, df_names_era5)),
 
   # read all files from Oct 2021, when ICOS starts
   tar_target(
@@ -124,7 +116,7 @@ list(
   ),
   tar_target(
     l_lev0_sub,
-    subset_by_date(l_lev0, start_date = "2022-01-01", end_date = "2025-01-31")
+    subset_by_date(l_lev0, start_date = "2022-01-01", end_date = "2025-12-31")
   ),
   tar_target(
     l_lev1_post2022,
