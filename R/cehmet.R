@@ -18,7 +18,10 @@ remove_time_errors <- function(pname_in, n_headers = 4, dryrun = FALSE) {
 
   # Print any lines that do not match the valid timestamp format
   if (any(!v_valid_time)) {
-    print(paste0(pname_in, ": the following lines do not begin with a valid timestamp and will be removed:"))
+    print(paste0(
+      pname_in,
+      ": the following lines do not begin with a valid timestamp and will be removed:"
+    ))
     print(which(!v_valid_time))
     print(v_lines[!v_valid_time], sep = "\n")
   } else {
@@ -31,23 +34,30 @@ remove_time_errors <- function(pname_in, n_headers = 4, dryrun = FALSE) {
   # write_lines(v_lines,  file = pname_in, append = TRUE)
   # length(v_lines)
   v_lines <- c(v_header, v_lines)
-  if (!dryrun) write_lines(v_lines, file = pname_in)
+  if (!dryrun) {
+    write_lines(v_lines, file = pname_in)
+  }
   return(pname_in)
 }
-
 
 
 # define function to read TOA5 data
 import_campbell_data <- function(fname) {
   # second line of header contains variable names
   header <- scan(
-    file = fname, skip = 1, nlines = 1, what = character(),
+    file = fname,
+    skip = 1,
+    nlines = 1,
+    what = character(),
     sep = ","
   )
   # read in data
   dt <- fread(
-    file = fname, skip = 4, header = FALSE,
-    na.strings = c("NAN"), sep = ","
+    file = fname,
+    skip = 4,
+    header = FALSE,
+    na.strings = c("NAN"),
+    sep = ","
   )
   names(dt) <- header
 
@@ -60,7 +70,9 @@ import_campbell_data <- function(fname) {
   # rename timestamp variable
   setnames(dt, "TIMESTAMP", "date")
   # if variable RECORD exists, remove it
-  if ("RECORD" %in% colnames(dt)) dt$RECORD <- NULL
+  if ("RECORD" %in% colnames(dt)) {
+    dt$RECORD <- NULL
+  }
   return(dt)
 }
 
@@ -68,7 +80,9 @@ import_campbell_data <- function(fname) {
 # remove standard deviations and any unneeded columns
 remove_excess_cols <- function(dt, remove_std = FALSE) {
   # remove any standard deviations columns (ending with "_Std") - no need for these
-  if (remove_std) dt[, grep("_Std$", colnames(dt)) := NULL]
+  if (remove_std) {
+    dt[, grep("_Std$", colnames(dt)) := NULL]
+  }
   dt[, grep("_IU", colnames(dt)) := NULL]
   # remove any columns marked for deletion - usually duplicates after merging
   dt[, grep("_delete_me", colnames(dt)) := NULL]
@@ -160,23 +174,30 @@ spatial_average_icos_vars <- function(dt) {
   for (var_name in v_icos_names) {
     print(var_name)
     v_matching_names <-
-      names(dt)[str_starts(names(dt), paste0(var_name, "_")) &
-        names(dt) %!like% "_IU_" &
-        names(dt) %!like% "_SF" &
-        names(dt) %!like% "_ISCAL_" &
-        names(dt) %!like% "_Max" &
-        # names(dt) %!like% "_Tot" &
-        names(dt) %!like% "_Std"]
+      names(dt)[
+        str_starts(names(dt), paste0(var_name, "_")) &
+          names(dt) %!like% "_IU_" &
+          names(dt) %!like% "_SF" &
+          names(dt) %!like% "_ISCAL_" &
+          names(dt) %!like% "_Max" &
+          # names(dt) %!like% "_Tot" &
+          names(dt) %!like% "_Std"
+      ]
     print(v_matching_names)
 
     # calculate each of the ICOS vars as the mean of all replicates
     # possible limit soil vars to one depth?
-    dt <- within(dt, assign(var_name, rowMeans(dt[, ..v_matching_names, drop = FALSE], na.rm = TRUE)))
+    dt <- within(
+      dt,
+      assign(
+        var_name,
+        rowMeans(dt[, ..v_matching_names, drop = FALSE], na.rm = TRUE)
+      )
+    )
     # print(summary(dt[, v_matching_names, drop = FALSE]))
   }
   return(dt)
 }
-
 
 
 ###### functions below not called I think #####
@@ -198,23 +219,33 @@ combine_with_existing <- function(dt, fname_to_append_to, write_csv = TRUE) {
   return(dt)
 }
 
-append_new_data <- function(dt_files_to_read, last_date_to_process = as.POSIXlt(Sys.Date() - 1)) {
+append_new_data <- function(
+  dt_files_to_read,
+  last_date_to_process = as.POSIXlt(Sys.Date() - 1)
+) {
   for (i in seq_len(nrow(dt_files_to_read))) {
     # get the file names for reading and writing
-    fname_in <- fs::path(paste(dt_files_to_read[i, "pname_data"],
-      dt_files_to_read[i, "site_id"], "current",
+    fname_in <- fs::path(paste(
+      dt_files_to_read[i, "pname_data"],
+      dt_files_to_read[i, "site_id"],
+      "current",
       dt_files_to_read[i, "fname"],
       sep = "/"
     ))
     this_year <- year(Sys.Date())
-    fname_annual <- fs::path(paste(dt_files_to_read[i, "pname_data"],
-      dt_files_to_read[i, "site_id"], "annual", this_year,
+    fname_annual <- fs::path(paste(
+      dt_files_to_read[i, "pname_data"],
+      dt_files_to_read[i, "site_id"],
+      "annual",
+      this_year,
       dt_files_to_read[i, "fname"],
       # paste0(fs::path_ext_remove(dt_files_to_read[i, "fname"]), "_", this_year, ".dat"),
       sep = "/"
     ))
-    fname_complete <- fs::path(paste(dt_files_to_read[i, "pname_data"],
-      dt_files_to_read[i, "site_id"], "complete",
+    fname_complete <- fs::path(paste(
+      dt_files_to_read[i, "pname_data"],
+      dt_files_to_read[i, "site_id"],
+      "complete",
       dt_files_to_read[i, "fname"],
       sep = "/"
     ))
@@ -228,7 +259,15 @@ append_new_data <- function(dt_files_to_read, last_date_to_process = as.POSIXlt(
     dt <- standardise_names(dt)
     # append the data
     combine_with_existing(dt, fname_annual = NULL, fname_complete = NULL)
-    combine_with_existing(dt, fname_to_append_to = fname_annual, write_csv = FALSE)
-    combine_with_existing(dt, fname_to_append_to = fname_complete, write_csv = FALSE)
+    combine_with_existing(
+      dt,
+      fname_to_append_to = fname_annual,
+      write_csv = FALSE
+    )
+    combine_with_existing(
+      dt,
+      fname_to_append_to = fname_complete,
+      write_csv = FALSE
+    )
   }
 }

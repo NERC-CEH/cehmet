@@ -19,13 +19,15 @@
 #' }
 #' @rdname pad_data
 #' @export
-pad_data <- function(dt, by = "30 min", date_field = "DATECT", v_dates = NULL){
-##* WIP converting back and forth between df & dt is daft and has been removed - rerun to check effects elsewhere
+pad_data <- function(dt, by = "30 min", date_field = "DATECT", v_dates = NULL) {
+  ##* WIP converting back and forth between df & dt is daft and has been removed - rerun to check effects elsewhere
   # df <- as.data.frame(df)
   setDT(dt)
-  if (is.null(v_dates)) v_dates <- dt[, ..date_field][[1]]
+  if (is.null(v_dates)) {
+    v_dates <- dt[, ..date_field][[1]]
+  }
   first <- min(v_dates, na.rm = TRUE)
-  last  <- max(v_dates, na.rm = TRUE)
+  last <- max(v_dates, na.rm = TRUE)
   # make a dt with complete time series with interval "by"
   dt_date <- data.table(DATECT = seq.POSIXt(first, last, by = by))
   dt <- dt[dt_date, on = .(DATECT = DATECT)]
@@ -49,16 +51,16 @@ pad_data <- function(dt, by = "30 min", date_field = "DATECT", v_dates = NULL){
 #' }
 #' @rdname detect_gaps
 #' @export
-detect_gaps <- function(dt, expected_interval = 30, date_field = "DATECT"){
+detect_gaps <- function(dt, expected_interval = 30, date_field = "DATECT") {
   setDT(dt)
   v_dates <- dt[, ..date_field][[1]]
   dt[, date_curr := v_dates]
   dt[, date_prev := shift(date_curr, 1)]
-  dt[, date_int := difftime(date_curr, date_prev, units="mins")]
+  dt[, date_int := difftime(date_curr, date_prev, units = "mins")]
   dt$date_int[1] <- expected_interval
-  v_longer  <- sum( dt$date_int > expected_interval )
-  v_shorter <- sum( dt$date_int < expected_interval )
-  v_gaps <- which( dt$date_int != 30 )
+  v_longer <- sum(dt$date_int > expected_interval)
+  v_shorter <- sum(dt$date_int < expected_interval)
+  v_gaps <- which(dt$date_int != 30)
   return(list(
     v_longer = v_longer,
     v_shorter = v_shorter,
@@ -88,12 +90,21 @@ detect_gaps <- function(dt, expected_interval = 30, date_field = "DATECT"){
 #' }
 #' @rdname impute_by_regn
 #' @export
-impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
-  selection = TRUE, date_field = "DATECT", k = 40,
-  fit = TRUE, x = NULL, df_era5 = NULL,
-  lat = 55.792, lon = -3.243, plot_graph = TRUE
-  ) {
-
+impute_dt <- function(
+  y,
+  l_met = l_met,
+  method = "era5",
+  qc_tokeep = 0,
+  selection = TRUE,
+  date_field = "DATECT",
+  k = 40,
+  fit = TRUE,
+  x = NULL,
+  df_era5 = NULL,
+  lat = 55.792,
+  lon = -3.243,
+  plot_graph = TRUE
+) {
   df_method <- data.frame(
     method = c(
       "missing",
@@ -111,7 +122,7 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
   # get the qc code for the selected method
   qc <- df_method$qc[match(method, df_method$method)]
 
-  dt    <- l_met$dt
+  dt <- l_met$dt
   dt_qc <- l_met$dt_qc
 
   # dt_qc[, y][which(i_sel)]
@@ -125,7 +136,9 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
   # isel = TRUE  = missing, imputed (AND selected)
   # isel = FALSE = raw
   i_sel <- dt_qc[, ..y] %!in% qc_tokeep & selection
-  if (method == "noneg") i_sel <- i_sel & dt[, y] < 0
+  if (method == "noneg") {
+    i_sel <- i_sel & dt[, y] < 0
+  }
   if (method == "nightzero") {
     dt$date <- dt[, ..date_field] # needs to be called "date" for openair functions
     dt <- cutData(dt, type = "daylight", latitude = lat, longitude = lon)
@@ -140,16 +153,18 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
   if (method == "nightzero" | method == "noneg" | method == "zero") {
     dt[i_sel, eval(y) := 0]
   } else if (method == "time") {
-    v_date  <- dt[, ..date_field][[1]]
-    datect_num <- as.numeric(v_date)  ## !dt_qry$
-    hour       <- as.POSIXlt(v_date)$hour
-    yday       <- as.POSIXlt(v_date)$yday
-    n_yday     <- length(unique(yday))
-    k_yday     <- as.integer(n_yday / 2)
+    v_date <- dt[, ..date_field][[1]]
+    datect_num <- as.numeric(v_date) ## !dt_qry$
+    hour <- as.POSIXlt(v_date)$hour
+    yday <- as.POSIXlt(v_date)$yday
+    n_yday <- length(unique(yday))
+    k_yday <- as.integer(n_yday / 2)
 
-    m <- gam(dt[, ..y][[1]] ~ s(datect_num, k = k, bs = "cr") +
-                   s(yday, k = k_yday, bs = "cr") +
-                   s(hour, k = -1, bs = "cc"),
+    m <- gam(
+      dt[, ..y][[1]] ~
+        s(datect_num, k = k, bs = "cr") +
+          s(yday, k = k_yday, bs = "cr") +
+          s(hour, k = -1, bs = "cc"),
       na.action = na.exclude #, data = dt
     )
     v_pred <- predict(m, newdata = data.frame(datect_num, hour, yday))
@@ -158,7 +173,7 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
     if (method == "era5") {
       v_x <- dt_era5[, ..y] # use ERA5 data
     } else {
-      v_x <- dt[, ..x]  # use x variable in the CEDA data
+      v_x <- dt[, ..x] # use x variable in the CEDA data
     }
     if (fit) {
       dtt <- data.frame(y = dt[, ..y], x = v_x)
@@ -166,7 +181,8 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
       dtt$y[i_sel] <- NA
       m <- lm(y ~ x, data = dtt, na.action = na.exclude)
       v_pred <- predict(m, newdata = dtt)
-    } else {  # or just replace y with x
+    } else {
+      # or just replace y with x
       v_pred <- v_x
     }
     dt[i_sel, eval(y) := v_pred[i_sel]]
@@ -176,7 +192,11 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
   dt_qc[i_sel, eval(y) := qc]
 
   if (plot_graph) {
-    dtt <- data.table(date = dt[, ..date_field][[1]], y = dt[, ..y][[1]], qc = dt_qc[, ..y][[1]])
+    dtt <- data.table(
+      date = dt[, ..date_field][[1]],
+      y = dt[, ..y][[1]],
+      qc = dt_qc[, ..y][[1]]
+    )
     p <- ggplot(dtt, aes(date, y))
     # if (method == "era5") { # include era5 data in plot
     #   p <- p + geom_point(data = dt_era5,
@@ -191,7 +211,7 @@ impute_dt <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
 }
 
 plot_with_qc <- function(y, l_met = l_met, date_field = "DATECT") {
-  dt    <- l_met$dt
+  dt <- l_met$dt
   dt_qc <- l_met$dt_qc
   dtt <- data.frame(date = dt[, date_field], y = dt[, y], qc = dt_qc[, y])
   p <- ggplot(dtt, aes(date, y))
@@ -221,12 +241,21 @@ plot_with_qc <- function(y, l_met = l_met, date_field = "DATECT") {
 #' }
 #' @rdname impute_by_regn
 #' @export
-impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
-  selection = TRUE, date_field = "DATECT", k = 40,
-  fit = TRUE, x = NULL, df_era5 = NULL,
-  lat = 55.792, lon = -3.243, plot_graph = TRUE
-  ) {
-
+impute <- function(
+  y,
+  l_met = l_met,
+  method = "era5",
+  qc_tokeep = 0,
+  selection = TRUE,
+  date_field = "DATECT",
+  k = 40,
+  fit = TRUE,
+  x = NULL,
+  df_era5 = NULL,
+  lat = 55.792,
+  lon = -3.243,
+  plot_graph = TRUE
+) {
   df_method <- data.frame(
     method = c(
       "missing",
@@ -244,12 +273,14 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
   # get the qc code for the selected method
   qc <- df_method$qc[match(method, df_method$method)]
 
-  df    <- as.data.frame(l_met$dt)
+  df <- as.data.frame(l_met$dt)
   df_qc <- as.data.frame(l_met$dt_qc)
 
   # if there are no data or no missing data
   # or less than 2k data points for gam fitting, just return the input
-  if (all(is.na(df[, y])) | all(is.na(df[, y])) | sum(!is.na(df[, y])) < 2*k) {
+  if (
+    all(is.na(df[, y])) | all(is.na(df[, y])) | sum(!is.na(df[, y])) < 2 * k
+  ) {
     print(paste("No or too few data or no missing data for", y))
     return(l_met)
   } else {
@@ -264,7 +295,9 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
     # isel = TRUE  = missing, imputed (AND selected)
     # isel = FALSE = raw
     i_sel <- df_qc[, y] %!in% qc_tokeep & selection
-    if (method == "noneg") i_sel <- i_sel & df[, y] < 0
+    if (method == "noneg") {
+      i_sel <- i_sel & df[, y] < 0
+    }
     if (method == "nightzero") {
       df$date <- df[, date_field] # needs to be called "date" for openair functions
       df <- cutData(df, type = "daylight", latitude = lat, longitude = lon)
@@ -277,18 +310,20 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
     # calculate replacement values depending on the method
     # if a constant zero
     if (method == "nightzero" | method == "noneg" | method == "zero") {
-      df[, y]   [i_sel] <- 0
+      df[, y][i_sel] <- 0
     } else if (method == "time") {
-      v_date  <- df[, date_field]
-      datect_num <- as.numeric(v_date)  ## !df_qry$
-      hour       <- as.POSIXlt(v_date)$hour
-      yday       <- as.POSIXlt(v_date)$yday
-      n_yday     <- length(unique(yday))
-      k_yday     <- as.integer(n_yday / 2)
+      v_date <- df[, date_field]
+      datect_num <- as.numeric(v_date) ## !df_qry$
+      hour <- as.POSIXlt(v_date)$hour
+      yday <- as.POSIXlt(v_date)$yday
+      n_yday <- length(unique(yday))
+      k_yday <- as.integer(n_yday / 2)
 
-      m <- gam(df[, y] ~ s(datect_num, k = k, bs = "cr") +
-                    s(yday, k = k_yday, bs = "cr") +
-                    s(hour, k = -1, bs = "cc"),
+      m <- gam(
+        df[, y] ~
+          s(datect_num, k = k, bs = "cr") +
+            s(yday, k = k_yday, bs = "cr") +
+            s(hour, k = -1, bs = "cc"),
         na.action = na.exclude #, data = df
       )
       v_pred <- predict(m, newdata = data.frame(datect_num, hour, yday))
@@ -297,7 +332,7 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
       if (method == "era5") {
         v_x <- df_era5[, y] # use ERA5 data
       } else {
-        v_x <- df[, x]  # use x variable in the CEDA data
+        v_x <- df[, x] # use x variable in the CEDA data
       }
       if (fit) {
         dft <- data.frame(y = df[, y], x = v_x)
@@ -305,7 +340,8 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
         dft$y[i_sel] <- NA
         m <- lm(y ~ x, data = dft, na.action = na.exclude)
         v_pred <- predict(m, newdata = dft)
-      } else {  # or just replace y with x
+      } else {
+        # or just replace y with x
         v_pred <- v_x
       }
       df[, y][i_sel] <- v_pred[i_sel]
@@ -318,10 +354,15 @@ impute <- function(y, l_met = l_met, method = "era5", qc_tokeep = 0,
       dft <- data.frame(date = df[, date_field], y = df[, y], qc = df_qc[, y])
       p <- ggplot(dft, aes(date, y))
       #p <- p + geom_line()
-      if (method == "era5") { # include era5 data in plot
-        p <- p + geom_point(data = df_era5,
-          aes(x = df_era5[, date_field], y = df_era5[, y]),
-          colour = "black", size = 1)
+      if (method == "era5") {
+        # include era5 data in plot
+        p <- p +
+          geom_point(
+            data = df_era5,
+            aes(x = df_era5[, date_field], y = df_era5[, y]),
+            colour = "black",
+            size = 1
+          )
       }
       p <- p + geom_point(aes(y = y, colour = factor(qc)), size = 1) + ylab(y)
       fname <- paste0("plot_", y, "_", method, ".png")
