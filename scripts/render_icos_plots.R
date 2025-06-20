@@ -1,29 +1,32 @@
 library(rmarkdown)
-render("/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd", 
-#  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_year.html",
+render(
+  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_year.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_year.html",
   params = list(
-    n_days = 365, 
+    n_days = 365,
     #dir_out_mainmet = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo",
     dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
     validate_mainmet = TRUE
   )
 )
-render("/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd", 
-#  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_month.html",
+render(
+  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_month.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_month.html",
   params = list(
-    n_days = 31, 
+    n_days = 31,
     #dir_out_mainmet = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo",
     dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
     validate_mainmet = FALSE
   )
 )
-render("/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
-#  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_week.html",
+render(
+  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_week.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_week.html",
   params = list(
-    n_days = 7, 
+    n_days = 7,
     #dir_out_mainmet = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo",
     dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
     validate_mainmet = TRUE
