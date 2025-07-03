@@ -3,6 +3,7 @@ library(here)
 library(targets)
 library(future)
 library(data.table)
+library(yaml)
 future::plan("multicore")
 
 # Use UTC time throughout
@@ -12,21 +13,23 @@ Sys.setenv(TZ = "UTC")
 
 # Packages that your targets need for their tasks.
 v_packages <- c(
-  "here",
-  "fs",
-  "units",
   "data.table",
-  "stringr",
   "ecmwfr",
-  "powerjoin",
-  "stars",
-  "humidity",
-  "ggplot2",
+  "fs",
   "ggforce",
+  "ggplot2",
+  "here",
+  "humidity",
+  "mgcv",
+  "openair",
+  "powerjoin",
+  "purrr",
   "readr",
   "readxl",
-  "openair",
-  "mgcv"
+  "stars",
+  "stringr",
+  "tools",
+  "units"
 )
 
 # Set target options:
@@ -40,6 +43,19 @@ dir_in <- here("data-raw/UK-AMO/current")
 dir_out <- "/gws/nopw/j04/eddystore/public"
 this_year <- as.character(year(Sys.Date()))
 
+cred <- yaml.load_file("./../credentials.yml")
+do_upload <- TRUE
+force_upload <- FALSE
+overwrite <- FALSE
+station_code <- "UK-AMo_BM_" # actually includes "BM" for bio-met data
+ext <- ".dat"
+v_logger_id <- c("_L02", "_L03", "_L03", "_L04", "_L04", "_L04", "_L04", "_L05")
+v_file_id <- c("_F01", "_F01", "_F02", "_F01", "_F02", "_F04", "_F05", "_F01")
+
+# ICOS UPLOAD: process n_days prior to ending_n_days_ago, usually yesterday (= 0)
+n_days <- 14 # number of days to process
+ending_n_days_ago <- 0 # 0 = yesterday
+
 list(
   # variable names to monitor for changes
   tar_target(
@@ -52,7 +68,6 @@ list(
     here("_targets_hist_to_lev1/objects/l_lev1"),
     format = "file"
   ),
-
   tar_target(
     v_names_for_db,
     read.table(fname_names_db, stringsAsFactors = FALSE)$V1
@@ -237,8 +252,59 @@ list(
       site_id = "UK-AMO",
       level = "lev1"
     )
+  ),
+  # start of ICOS upload
+  tar_target(
+    first_date_to_process,
+    as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days)
+  ),
+  tar_target(
+    v_date_to_process,
+    as.POSIXlt(seq(
+      from = first_date_to_process,
+      length.out = n_days, by = "days"
+    ))
+  ),
+  tar_target(
+    v_fname_in,
+    paste0("UK-AMo_BM", v_logger_id, v_file_id, ".dat")
+  ),
+  tar_target(
+    v_fname_tc,
+    paste0(path_ext_remove(v_fname_in), "_timechecked.dat")
+  ),
+  tar_target(
+    tc_output,
+    timecheck_all_files(v_fname_in, v_fname_tc, dir_in),
+    format = "file"
+  ),
+  tar_target(
+    param_grid,
+    expand.grid(
+      date_to_process = v_date_to_process,
+      i_file = seq_along(v_fname_in)
+    )
+  ),
+  tar_target(
+    processed_files,
+    process_daily_file(
+      date_to_process = param_grid$date_to_process,
+      i_file = param_grid$i_file,
+      dir_in = dir_in,
+      dir_out = dir_out,
+      station_code = station_code,
+      v_logger_id = v_logger_id,
+      v_file_id = v_file_id,
+      v_fname_tc = v_fname_tc,
+      ext = ext,
+      overwrite = overwrite,
+      do_upload = do_upload,
+      force_upload = force_upload
+    ),
+    pattern = map(param_grid)
   )
 )
+
 
 # 310 secs from 2024-07-01
 # 888 secs from 2022-01-01
