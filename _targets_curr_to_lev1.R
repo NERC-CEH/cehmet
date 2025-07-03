@@ -20,10 +20,14 @@ v_packages <- c(
   "ggplot2",
   "here",
   "humidity",
+  "httr",
+  "jsonlite",
+  "lubridate",
   "mgcv",
   "openair",
   "powerjoin",
   "purrr",
+  "RCurl",
   "readr",
   "readxl",
   "stars",
@@ -55,6 +59,9 @@ v_file_id <- c("_F01", "_F01", "_F02", "_F01", "_F02", "_F04", "_F05", "_F01")
 # ICOS UPLOAD: process n_days prior to ending_n_days_ago, usually yesterday (= 0)
 n_days <- 14 # number of days to process
 ending_n_days_ago <- 0 # 0 = yesterday
+
+# Query the Carbon Portal
+n_days_to_query <- 7
 
 list(
   # variable names to monitor for changes
@@ -302,9 +309,27 @@ list(
       force_upload = force_upload
     ),
     pattern = map(param_grid)
+  ),
+
+  # Querying the CP to check successful upload.
+  tar_target(
+    query_dates,
+    as.POSIXlt(seq(as.POSIXlt(Sys.Date() - n_days_to_query), as.POSIXlt(Sys.Date() - 1), by = "days"))
+  ),
+  tar_target(
+    files_to_query,
+    basename(c(sapply(query_dates, get_pathname_daily, dir_out, station_code, v_logger_id, v_file_id, ext)))
+  ),
+  tar_target(
+    CP_response,
+    cbind(get_pid(files_to_query), data.frame(url_exists = query_CP(files_to_query)))
+  ),
+  tar_target(
+    write_CP_response,
+    write_CP_reponse(CP_response, query_dates),
+    format = "file"
   )
 )
-
 
 # 310 secs from 2024-07-01
 # 888 secs from 2022-01-01

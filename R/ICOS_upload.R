@@ -287,3 +287,186 @@ process_daily_file <- function(date_to_process, i_file, dir_in, dir_out,
 
   return(pname_daily)
 }
+
+#' Construct SPARQL Query for ICOS File Metadata
+#'
+#' Builds a SPARQL query string to retrieve persistent identifiers (PIDs) and filenames
+#' for a given set of ICOS data files, filtered by file type and station.
+#'
+#' @param file_names Character vector. Filenames to query (e.g., `"UK-AMo_BM_20250701_L02_F01.dat"`).
+#'
+#' @return A character string containing the SPARQL query.
+#'
+#' @details
+#' This function constructs a SPARQL query that filters for BioMeteorological (BM) data
+#' files associated with the UK-AMo station. It replaces any file extensions with `.dat`
+#' and embeds the filenames into a regex filter in the query.
+#'
+#' @export
+make_query <- function(file_names = NA) {
+  file_names <- gsub("\\.[^.]+$", ".dat", file_names)
+
+  sparql_query <- paste0('
+prefix cpmeta: <http://meta.icos-cp.eu/ontologies/cpmeta/>
+prefix cpres: <http://meta.icos-cp.eu/resources/cpmeta/>
+prefix esstation: <http://meta.icos-cp.eu/resources/stations/ES_>
+prefix prov: <http://www.w3.org/ns/prov#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+select ?pid ?fileName
+where {
+  {
+    SELECT ?spec WHERE {
+      VALUES (?ftype ?spec){
+        ("DHP" cpres:digHemispherPics )
+        ("EC" cpres:etcEddyFluxRawSeriesBin )
+        ("EC" cpres:etcEddyFluxRawSeriesCsv )
+        ("ST" cpres:etcStorageFluxRawSeriesBin )
+        ("ST" cpres:etcStorageFluxRawSeriesCsv )
+        ("BM" cpres:etcBioMeteoRawSeriesBin )
+        ("BM" cpres:etcBioMeteoRawSeriesCsv )
+        ("SAHEAT" cpres:etcSaheatFlagFile )
+        ("CEP" cpres:ceptometerMeasurements )
+      }
+      FILTER((?ftype = "BM"))
+    }
+  }
+
+  ?dobj cpmeta:hasObjectSpec ?spec .
+  ?dobj cpmeta:wasAcquiredBy/prov:wasAssociatedWith esstation:UK-AMo .
+  ?dobj cpmeta:wasAcquiredBy/prov:startedAtTime ?startTime .
+  FILTER NOT EXISTS{[] cpmeta:isNextVersionOf ?dobj }
+  BIND(substr(str(?dobj), strlen(str(?dobj)) - 23) AS ?pid)
+  ?dobj cpmeta:hasName ?fileName .
+  ?dobj cpmeta:hasSizeInBytes ?size .
+  FILTER(regex(?fileName, "', paste(file_names, collapse = "|"), '"))
+}
+')
+
+  return(sparql_query)
+}
+
+#' Retrieve Persistent Identifiers (PIDs) for ICOS Files
+#'
+#' Queries the ICOS metadata SPARQL endpoint to retrieve PIDs for a list of filenames.
+#'
+#' @param file_names Character vector. Filenames to query.
+#'
+#' @return A data frame with columns `filename` and `pid`.
+#'
+#' @details
+#' This function sends a SPARQL query to the ICOS metadata endpoint using `make_query()`.
+#' It parses the JSON response and joins the results with the input filenames.
+#' If no PIDs are returned or the number of results doesn't match the input, warnings or errors are raised.
+#' NB: PIDs are assigned after the post-upload QAQC. They are assigned by ICOS, once they recieve the uploaded data from the relevant Thematic Centre.
+#'
+#' @export
+get_pid <- function(file_names = NA) {
+  endpoint <- "https://meta.icos-cp.eu/sparql"
+  response <- httr::GET(endpoint, query = list(query = make_query(file_names)))
+
+  status_code <- httr::status_code(response)
+  # cat("HTTP Status Code:", status_code, "\n") # 200 == successful
+  if (status_code != 200) {
+    stop("API status code suggests an error. Check the query?")
+  }
+
+  # content_type <- httr::headers(response)$`content-type`
+  # cat("Content Type:", content_type, "\n")
+
+  parsed_json <- fromJSON(httr::content(response, "text"), simplifyDataFrame = T)
+
+  if (length(parsed_json$results$bindings$fileName$value) == 0) {
+    stop("Did not recieve any PIDs")
+  }
+
+  if (length(parsed_json$results$bindings$fileName$value) != length(file_names)) {
+    warning("Missing PIDs")
+  }
+
+  if (length(parsed_json$results$bindings$fileName$value) > 0) {
+    return(dplyr::left_join(data.frame(filename = file_names), data.frame(filename = parsed_json$results$bindings$fileName$value, pid = parsed_json$results$bindings$pid$value), by = "filename"))
+  }
+}
+
+#' Query if ICOS Files Exist on the Carbon Portal
+#'
+#' Verifies whether files with given filenames have corresponding PIDs and exist on the ICOS Carbon Portal.
+#'
+#' @param filenames Character vector. Filenames to check.
+#'
+#' @return Logical vector. `TRUE` if the file exists on the portal, `FALSE` otherwise.
+#'
+#' @details
+#' This function uses `get_pid()` to retrieve PIDs for the given filenames, constructs the
+#' corresponding Carbon Portal URLs, and checks if those URLs exist using `url_exists()`.
+#' It also handles the case where a PID is `NA` but the URL appears to exist.
+#'
+#' @export
+query_CP <- function(filenames = NA) {
+  v_url <- paste0("https://meta.icos-cp.eu/objects/", get_pid(filenames)$pid)
+  result <- url_exists(v_url)
+  result <- ifelse(v_url == "https://meta.icos-cp.eu/objects/NA", F, result)
+  if (length(result == 1)) {
+    return(unname(result))
+  } else {
+    return(result)
+  }
+}
+
+#' Check if URLs Exist
+#'
+#' This function takes a vector of URLs and checks whether each one is reachable.
+#' It returns a logical vector indicating the existence of each URL.
+#'
+#' @param urls A character vector of URLs to check.
+#' @return A logical vector of the same length as `urls`, where each element is
+#' `TRUE` if the corresponding URL is reachable (i.e., no error occurred during the GET request),
+#' and `FALSE` otherwise.
+#' @importFrom httr GET
+#' @examples
+#' url_exists(c("https://www.google.com", "https://nonexistent.example.com"))
+url_exists <- function(urls) {
+  results <- sapply(urls, function(url) {
+    response <- tryCatch(
+      GET(url),
+      error = function(e) e
+    )
+
+    if (inherits(response, "error")) {
+      # An error occurred, indicating that the URL does not exist or couldn't be reached
+      return(FALSE)
+    } else {
+      # The URL exists and the response was successful
+      return(TRUE)
+    }
+  })
+}
+
+#' Write Carbon Portal Response to CSV
+#'
+#' This function writes a data frame (typically a response from the ICOS Carbon Portal)
+#' to a CSV file. The filename includes the date range from the `query_dates` vector,
+#' formatted as `dd-mm-yyyy`.
+#'
+#' @param response A data frame containing the response data to be written.
+#' @param query_dates A vector of dates (as Date objects) representing the query period.
+#' These are used to generate the filename.
+#'
+#' @return Writes a CSV file to the working directory. The function does not return a value.
+#' @examples
+#' \dontrun{
+#' write_CP_response(response_data, as.Date(c("2025-06-26", "2025-07-02")))
+#' }
+write_CP_response <- function(response, query_dates){
+  fname <- sprintf(
+    "./data/CP_responses/CP_response_%s_to_%s.csv",
+    format(min(query_dates), "%d-%m-%Y"),
+    format(max(query_dates), "%d-%m-%Y"))
+
+  readr::write_csv(response,
+                   file = fname)
+
+  return(fname)
+
+}
