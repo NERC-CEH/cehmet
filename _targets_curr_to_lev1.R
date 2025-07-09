@@ -269,7 +269,8 @@ list(
     v_date_to_process,
     as.POSIXlt(seq(
       from = first_date_to_process,
-      length.out = n_days, by = "days"
+      length.out = n_days,
+      by = "days"
     ))
   ),
   tar_target(
@@ -293,7 +294,7 @@ list(
     )
   ),
   tar_target(
-    processed_files,
+    uploaded_files,
     process_daily_file(
       date_to_process = param_grid$date_to_process,
       i_file = param_grid$i_file,
@@ -314,15 +315,30 @@ list(
   # Querying the CP to check successful upload.
   tar_target(
     query_dates,
-    as.POSIXlt(seq(as.POSIXlt(Sys.Date() - n_days_to_query), as.POSIXlt(Sys.Date() - 1), by = "days"))
+    as.POSIXlt(seq(
+      as.POSIXlt(Sys.Date() - n_days_to_query),
+      as.POSIXlt(Sys.Date() - 1),
+      by = "days"
+    ))
   ),
   tar_target(
     files_to_query,
-    basename(c(sapply(query_dates, get_pathname_daily, dir_out, station_code, v_logger_id, v_file_id, ext)))
+    basename(c(sapply(
+      query_dates,
+      get_pathname_daily,
+      dir_out,
+      station_code,
+      v_logger_id,
+      v_file_id,
+      ext
+    )))
   ),
   tar_target(
     CP_response,
-    cbind(get_pid(files_to_query), data.frame(url_exists = query_CP(files_to_query)))
+    cbind(
+      get_pid(files_to_query),
+      data.frame(url_exists = query_CP(files_to_query))
+    )
   ),
   tar_target(
     write_CP_response,
