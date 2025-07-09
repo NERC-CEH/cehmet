@@ -90,7 +90,7 @@ detect_gaps <- function(dt, expected_interval = 30, date_field = "DATECT") {
 #' }
 #' @rdname impute_by_regn
 #' @export
-impute_dt <- function(
+impute <- function(
   y,
   l_met = l_met,
   method = "era5",
@@ -99,6 +99,7 @@ impute_dt <- function(
   date_field = "DATECT",
   k = 40,
   fit = TRUE,
+  n_min = 10,
   x = NULL,
   df_era5 = NULL,
   lat = 55.792,
@@ -124,6 +125,13 @@ impute_dt <- function(
 
   dt <- l_met$dt
   dt_qc <- l_met$dt_qc
+
+  # how many non-missing data are there?
+  n_data <- sum(!is.na(dt[, ..y][[1]]))
+  # these methods don't work with very few/no data
+  if (n_data <= n_min && (method == "time" || method == "regn")) {
+    return(list(dt = dt, dt_qc = dt_qc))
+  }
 
   # dt_qc[, y][which(i_sel)]
   # table(i_sel)
@@ -153,21 +161,24 @@ impute_dt <- function(
   if (method == "nightzero" | method == "noneg" | method == "zero") {
     dt[i_sel, eval(y) := 0]
   } else if (method == "time") {
+    if (k > n_data / 4) {
+      k <- as.integer(n_data / 4)
+    }
     v_date <- dt[, ..date_field][[1]]
     datect_num <- as.numeric(v_date) ## !dt_qry$
     hour <- as.POSIXlt(v_date)$hour
-    yday <- as.POSIXlt(v_date)$yday
-    n_yday <- length(unique(yday))
-    k_yday <- as.integer(n_yday / 2)
+    # yday <- as.POSIXlt(v_date)$yday
+    # n_yday <- length(unique(yday))
+    # k_yday <- as.integer(n_yday / 2)
 
     m <- gam(
       dt[, ..y][[1]] ~
         s(datect_num, k = k, bs = "cr") +
-          s(yday, k = k_yday, bs = "cr") +
+          # s(yday, k = k_yday, bs = "cr") +
           s(hour, k = -1, bs = "cc"),
       na.action = na.exclude #, data = dt
     )
-    v_pred <- predict(m, newdata = data.frame(datect_num, hour, yday))
+    v_pred <- predict(m, newdata = data.frame(datect_num, hour))
     dt[i_sel, y] <- v_pred[i_sel]
   } else if (method == "regn" || method == "era5") {
     if (method == "era5") {
@@ -217,160 +228,4 @@ plot_with_qc <- function(y, l_met = l_met, date_field = "DATECT") {
   p <- ggplot(dtt, aes(date, y))
   p <- p + geom_point(aes(y = y, colour = factor(qc)), size = 1) + ylab(y)
   return(p)
-}
-
-#' @title impute
-#' @description Impute missing values using various methods
-#' @param y Response variable with missing values to be replaced
-#'   (variable name as a "quoted string")
-#' @param x Covariate to be used (name of a variable in the same data frame as
-#'   a "quoted string")
-#' @param l_met List of two data frames containing data and qc codes. Default: l_met
-#' @param qc qc code to denote values imputed by this function, Default: 3
-#' @param fit Whether to fit a linear model or directly replace missing y with
-#'   x values, Default: TRUE
-#' @return List of two data frames containing data and qc codes with imputed values.
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()) {
-#'  #EXAMPLE1
-#' l_met <- list(df = df, df_qc = df_qc)
-#' l_met <- impute(y = "SW_IN", x = "PPFD_IN",  l_met)
-#'  }
-#' }
-#' @rdname impute_by_regn
-#' @export
-impute <- function(
-  y,
-  l_met = l_met,
-  method = "era5",
-  qc_tokeep = 0,
-  selection = TRUE,
-  date_field = "DATECT",
-  k = 40,
-  fit = TRUE,
-  x = NULL,
-  df_era5 = NULL,
-  lat = 55.792,
-  lon = -3.243,
-  plot_graph = TRUE
-) {
-  df_method <- data.frame(
-    method = c(
-      "missing",
-      "time",
-      "regn",
-      "nightzero",
-      "noneg",
-      "zero",
-      "era5"
-    ),
-    qc = c(1, 2, 3, 4, 5, 6, 7) # 0 = raw, 1 = missing
-  )
-  # saveRDS(df_method, file = here("data", "df_method.rds"))
-  method <- match.arg(method, df_method$method)
-  # get the qc code for the selected method
-  qc <- df_method$qc[match(method, df_method$method)]
-
-  df <- as.data.frame(l_met$dt)
-  df_qc <- as.data.frame(l_met$dt_qc)
-
-  # if there are no data or no missing data
-  # or less than 2k data points for gam fitting, just return the input
-  if (
-    all(is.na(df[, y])) | all(is.na(df[, y])) | sum(!is.na(df[, y])) < 2 * k
-  ) {
-    print(paste("No or too few data or no missing data for", y))
-    return(l_met)
-  } else {
-    # df_qc[, y][which(i_sel)]
-    # table(i_sel)
-    # table(df[, y] < 0)
-    # table(df_qc[, y])
-    # indices of values to change
-    # default
-    # qc_tokeep typically set to 0, so this selects any other value (missing or imputed)
-    # selection optionally adds those selected in the metdb app ggiraph plots
-    # isel = TRUE  = missing, imputed (AND selected)
-    # isel = FALSE = raw
-    i_sel <- df_qc[, y] %!in% qc_tokeep & selection
-    if (method == "noneg") {
-      i_sel <- i_sel & df[, y] < 0
-    }
-    if (method == "nightzero") {
-      df$date <- df[, date_field] # needs to be called "date" for openair functions
-      df <- cutData(df, type = "daylight", latitude = lat, longitude = lon)
-      i_sel <- i_sel & df$daylight == "nighttime"
-      df$daylight <- NULL
-      # if date is not the original variable name, delete it - we don't want an extra column
-      if (date_field != "date") df$date <- NULL
-    }
-
-    # calculate replacement values depending on the method
-    # if a constant zero
-    if (method == "nightzero" | method == "noneg" | method == "zero") {
-      df[, y][i_sel] <- 0
-    } else if (method == "time") {
-      v_date <- df[, date_field]
-      datect_num <- as.numeric(v_date) ## !df_qry$
-      hour <- as.POSIXlt(v_date)$hour
-      yday <- as.POSIXlt(v_date)$yday
-      n_yday <- length(unique(yday))
-      k_yday <- as.integer(n_yday / 2)
-
-      m <- gam(
-        df[, y] ~
-          s(datect_num, k = k, bs = "cr") +
-            s(yday, k = k_yday, bs = "cr") +
-            s(hour, k = -1, bs = "cc"),
-        na.action = na.exclude #, data = df
-      )
-      v_pred <- predict(m, newdata = data.frame(datect_num, hour, yday))
-      df[, y][i_sel] <- v_pred[i_sel]
-    } else if (method == "regn" | method == "era5") {
-      if (method == "era5") {
-        v_x <- df_era5[, y] # use ERA5 data
-      } else {
-        v_x <- df[, x] # use x variable in the CEDA data
-      }
-      if (fit) {
-        dft <- data.frame(y = df[, y], x = v_x)
-        # exclude indices i_sel i.e. do not fit to those we are replacing
-        dft$y[i_sel] <- NA
-        m <- lm(y ~ x, data = dft, na.action = na.exclude)
-        v_pred <- predict(m, newdata = dft)
-      } else {
-        # or just replace y with x
-        v_pred <- v_x
-      }
-      df[, y][i_sel] <- v_pred[i_sel]
-    }
-
-    # add code for each replaced value in the qc df
-    df_qc[, y][i_sel] <- qc
-
-    if (plot_graph) {
-      dft <- data.frame(date = df[, date_field], y = df[, y], qc = df_qc[, y])
-      p <- ggplot(dft, aes(date, y))
-      #p <- p + geom_line()
-      if (method == "era5") {
-        # include era5 data in plot
-        p <- p +
-          geom_point(
-            data = df_era5,
-            aes(x = df_era5[, date_field], y = df_era5[, y]),
-            colour = "black",
-            size = 1
-          )
-      }
-      p <- p + geom_point(aes(y = y, colour = factor(qc)), size = 1) + ylab(y)
-      fname <- paste0("plot_", y, "_", method, ".png")
-      ggsave(p, filename = here("output", fname))
-    }
-    # convert back to data.table for output
-    setDT(df)
-    setDT(df_qc)
-    return(list(dt = df, dt_qc = df_qc))
-  }
 }
