@@ -276,7 +276,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   l_lev <- impute(
@@ -284,7 +284,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   l_lev <- impute(
@@ -306,7 +306,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   l_lev <- impute(
@@ -314,7 +314,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   l_lev <- impute(
@@ -322,7 +322,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   # not approp for rain
@@ -444,7 +444,7 @@ log_lev0_to_lev1 <- function(l_lev, v_names_for_db, plot_graph = FALSE) {
     l_met = l_lev,
     method = "time",
     k = 20,
-    qc_tokeep = c(0, 4),
+    qc_toleave = c(0, 4),
     plot_graph = plot_graph
   )
   l_lev <- impute(

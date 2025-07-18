@@ -165,7 +165,7 @@ convert_lev0_to_lev1 <- function(dt, df_era5, write_csv = FALSE) {
     y = "SW_IN",
     l_met = l_lev1,
     method = "regn",
-    qc_tokeep = c(0, 7),
+    qc_toleave = c(0, 7),
     x = "TS_4_1_1",
     plot_graph = plot_graph
   )
@@ -274,12 +274,12 @@ convert_lev0_to_lev1 <- function(dt, df_era5, write_csv = FALSE) {
     plot_graph = plot_graph
   )
   # For RN, CEDA data dodgy (just wrong col? never <0) - check;
-  # better to replace pre-icos data with era5; for now, replace all with qc_tokeep = "" (so even replace raw data)
+  # better to replace pre-icos data with era5; for now, replace all with qc_toleave = "" (so even replace raw data)
   # or recalc as balance of in-out
   l_lev1 <- impute(
     y = "RN_5_1_1",
     l_met = l_lev1,
-    qc_tokeep = "",
+    qc_toleave = "",
     method = "era5",
     df_era5 = df_era5,
     fit = FALSE,
@@ -326,7 +326,7 @@ convert_lev0_to_lev1 <- function(dt, df_era5, write_csv = FALSE) {
     y = "PPFD_IN_4_1_1",
     l_met = l_lev1,
     method = "regn",
-    qc_tokeep = c(0, 3),
+    qc_toleave = c(0, 3),
     x = "TS_4_1_1",
     plot_graph = plot_graph
   )
@@ -334,7 +334,7 @@ convert_lev0_to_lev1 <- function(dt, df_era5, write_csv = FALSE) {
     y = "PPFD_IN_4_1_1",
     l_met = l_lev1,
     method = "time",
-    qc_tokeep = c(0, 3),
+    qc_toleave = c(0, 3),
     plot_graph = plot_graph
   )
 
@@ -448,7 +448,7 @@ convert_lev0_to_lev1 <- function(dt, df_era5, write_csv = FALSE) {
   l_lev1 <- impute(
     y = "D_SNOW",
     l_met = l_lev1,
-    qc_tokeep = "",
+    qc_toleave = "",
     method = "era5",
     df_era5 = df_era5,
     fit = FALSE,

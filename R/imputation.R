@@ -74,28 +74,37 @@ detect_gaps <- function(dt, expected_interval = 30, date_field = "DATECT") {
 #'   (variable name as a "quoted string")
 #' @param x Covariate to be used (name of a variable in the same data frame as
 #'   a "quoted string")
-#' @param l_met List of two data frames containing data and qc codes. Default: l_met
-#' @param qc qc code to denote values imputed by this function, Default: 3
+#' @param l_met List of two data tables containing data and qc codes. Default: l_met
+#' @param method Method to use for imputing missing values, Default: "era5"
+#' @param qc_toleave Which QC codes to leave unaltered when selecting values to impute, Default: 0 (raw data)
+#' @param selection Denotes the points selected interactivelt by user in app Default: TRUE (= all)
+#' @param date_field Name of the date field or variable in the data frame. Default: DATECT
+#' @param k Number of knots to use when imputing using a GAM in the "time" method. Higher values give more flexibility = more wiggliness. Default: 40
 #' @param fit Whether to fit a linear model or directly replace missing y with
-#'   x values, Default: TRUE
+#'   x values when using either "regn" or "era5" methods, Default: TRUE
+#' @param x The covariate with which to fit a linear model in the "regn" method. Default: NULL
+#' @param df_era5 The name of the data frame containing the corresponding ERA5 data. Default: df_era5
+#' @param lat Latitude of the site for calculating day/night-time in "nightzero" method. Default: 55.792 (= Auchencorth)
+#' @param lon Longitude of the site for calculating day/night-time in "nightzero" method. Default: -3.243 (= Auchencorth)
+#' @param plot_graph Whether to produce a ggplot graphic - can be slow for large data sets. Default: TRUE
 #' @return List of two data frames containing data and qc codes with imputed values.
 #' @details DETAILS
 #' @examples
 #' \dontrun{
 #' if(interactive()) {
 #'  #EXAMPLE1
-#' l_met <- list(df = df, df_qc = df_qc)
+#' l_met <- list(dt = dt, dt_qc = dt_qc)
 #' l_met <- impute(y = "SW_IN", x = "PPFD_IN",  l_met)
 #'  }
 #' }
-#' @rdname impute_by_regn
+#' @rdname impute
 #' @export
 ##* WIP PL 11/07/2025 there is something going very wrong here!
 impute <- function(
   y,
   l_met = l_met,
   method = "era5",
-  qc_tokeep = 0,
+  qc_toleave = 0,
   selection = TRUE,
   date_field = "DATECT",
   k = 40,
@@ -124,8 +133,20 @@ impute <- function(
   # get the qc code for the selected method
   qc <- df_method$qc[match(method, df_method$method)]
 
-  dt <- l_met$dt
-  dt_qc <- l_met$dt_qc
+  # allow data frame or data table objects & naming conventions
+  # force former to a data table
+  if (exists("dt", where = l_met)) {
+    dt <- l_met$dt
+  }
+  if (exists("df", where = l_met)) {
+    dt <- setDT(l_met$df)
+  }
+  if (exists("dt_qc", where = l_met)) {
+    dt_qc <- l_met$dt_qc
+  }
+  if (exists("df_qc", where = l_met)) {
+    dt_qc <- setDT(l_met$df_qc)
+  }
 
   # if there are no data or no missing data
   # or less than 2 x k data points for gam fitting, just return the input
@@ -147,30 +168,21 @@ impute <- function(
       return(list(dt = dt, dt_qc = dt_qc))
     }
 
-    # dt_qc[, y][which(i_sel)]
-    # table(i_sel)
-    # table(dt[, y] < 0)
-    # table(dt_qc[, y])
     # indices of values to change
-    # default
-    # qc_tokeep typically set to 0, so this selects any other value (missing or imputed)
+    # qc_toleave defaults to 0, so leaves raw data but allows missing values to be filled in. Can be used so that one imputation method does not over-ride another.
     # selection optionally adds those selected in the metdb app ggiraph plots
-    # isel = TRUE  = missing, imputed (AND selected)
-    # isel = FALSE = raw
+    # selected = TRUE  = missing, imputed (AND selected)
+    # selected = FALSE: don't think this would be used
 
-    ##* WIP i_sel needs to be column in dt
-    # i_sel <- dt_qc[, ..y][[1]] %!in% qc_tokeep & selection # df version
-    dt$i_sel <- dt_qc[, get(y) %!in% qc_tokeep & selection]
+    dt$selected <- dt_qc[, get(y) %!in% qc_toleave & selection]
 
     if (method == "noneg") {
-      # i_sel <- i_sel & dt[, ..y][[1]] < 0 # df version
-      dt[i_sel == TRUE, i_sel := get(y) < 0]
+      dt[selected == TRUE, selected := get(y) < 0]
     }
     if (method == "nightzero") {
       dt$date <- dt[, ..date_field] # needs to be called "date" for openair functions
       dt <- cutData(dt, type = "daylight", latitude = lat, longitude = lon)
-      # i_sel <- i_sel & dt$daylight == "nighttime" # df version
-      dt[i_sel == TRUE, i_sel := daylight == "nighttime"]
+      dt[selected == TRUE, selected := daylight == "nighttime"]
       dt$daylight <- NULL
       # if date is not the original variable name, delete it - we don't want an extra column
       if (date_field != "date") dt$date <- NULL
@@ -179,36 +191,23 @@ impute <- function(
     # calculate replacement values depending on the method
     # if a constant zero
     if (method == "nightzero" | method == "noneg" | method == "zero") {
-      dt[i_sel == TRUE, eval(y) := 0]
+      dt[selected == TRUE, eval(y) := 0]
     } else if (method == "time") {
       if (k > n_data / 4) {
         k <- as.integer(n_data / 4)
       }
-      ##* WIP put these inside dt and later delete them?
-      # v_date <- dt[, ..date_field][[1]]
-      # datect_num <- as.numeric(v_date) ## !dt_qry$
-      # hour <- as.POSIXlt(v_date)$hour
-      # yday <- as.POSIXlt(v_date)$yday
       dt[, hour := hour(get(date_field)) + minute(get(date_field)) / 60]
       dt[, yday := as.POSIXlt(get(date_field))$yday + hour / 24]
-      # n_yday <- length(unique(yday))
-      # k_yday <- as.integer(n_yday / 4)
-      # k_yday <- min(k, as.integer(n_yday / 4))
 
-      ##* WIP this still needs somw tweaking - check how it is in the app - works ok there?
       m <- gam(
-        # dt[, ..y][[1]] ~
         get(y) ~
-          # s(datect_num, k = k, bs = "cr") +
           s(yday, k = k, bs = "cr") +
             s(hour, k = -1, bs = "cc"),
         na.action = na.exclude,
         data = dt
       )
-      # v_pred <- predict(m, newdata = data.frame(datect_num, hour))
-      # dt[i_sel, ..y] <- v_pred[i_sel]
       dt[, pred := predict(m, newdata = dt)]
-      dt[i_sel == TRUE, eval(y) := pred]
+      dt[selected == TRUE, eval(y) := pred]
       dt[, pred := NULL]
       dt[, yday := NULL]
       dt[, hour := NULL]
@@ -220,20 +219,19 @@ impute <- function(
       }
       if (fit) {
         dtt <- data.frame(y = dt[, ..y], x = v_x)
-        # exclude indices i_sel i.e. do not fit to those we are replacing
-        dtt$y[i_sel] <- NA
+        # exclude indices selected i.e. do not fit to those we are replacing
+        dtt$y[selected] <- NA
         m <- lm(y ~ x, data = dtt, na.action = na.exclude)
         v_pred <- predict(m, newdata = dtt)
       } else {
         # or just replace y with x
         v_pred <- v_x
       }
-      ##* WIP do predictions inside dt as above?
-      dt[i_sel == TRUE, eval(y) := v_pred[i_sel]]
+      dt[selected == TRUE, eval(y) := v_pred[selected]]
     }
 
     # add code for each replaced value in the qc dt
-    dt_qc[which(dt$i_sel), eval(y) := qc]
+    dt_qc[which(dt$selected), eval(y) := qc]
 
     if (plot_graph) {
       dtt <- data.table(
@@ -242,16 +240,11 @@ impute <- function(
         qc = dt_qc[, ..y][[1]]
       )
       p <- ggplot(dtt, aes(date, y))
-      # if (method == "era5") { # include era5 data in plot
-      #   p <- p + geom_point(data = dt_era5,
-      #     aes(x = dt_era5[, date_field], y = dt_era5[, y]),
-      #     colour = "black", size = 1)
-      # }
       p <- p + geom_point(aes(y = y, colour = factor(qc)), size = 1) + ylab(y)
       fname <- paste0("plot_", y, "_", method, ".png")
       ggsave(p, filename = here("output", fname))
     }
-    dt[, i_sel := NULL]
+    dt[, selected := NULL]
     return(list(dt = dt, dt_qc = dt_qc))
   }
 }
