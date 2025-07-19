@@ -47,7 +47,7 @@ dir_in <- here("data-raw/UK-AMO/current")
 dir_out <- "/gws/nopw/j04/eddystore/public"
 this_year <- as.character(year(Sys.Date()))
 
-cred <- yaml.load_file("./../credentials.yml")
+cred <- yaml.load_file(here("scripts/credentials.yml"))
 do_upload <- TRUE
 force_upload <- FALSE
 overwrite <- FALSE
