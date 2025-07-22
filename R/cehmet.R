@@ -3,7 +3,12 @@
 
 # define function to check is each line of file starts with a valid timestamp
 # of the form YYYY-MM-DD hh:mm:ss
-remove_time_errors <- function(pname_in, n_headers = 4, dryrun = FALSE) {
+remove_time_errors <- function(
+  pname_in,
+  n_headers = 4,
+  dryrun = FALSE,
+  pname_out = NULL
+) {
   # Define a regular expression for a valid timestamp format
   #                      i.e. YYYY-MM-DD hh:mm:ss
   timestamp_regex <- '^\\"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'
@@ -34,12 +39,16 @@ remove_time_errors <- function(pname_in, n_headers = 4, dryrun = FALSE) {
   # write_lines(v_lines,  file = pname_in, append = TRUE)
   # length(v_lines)
   v_lines <- c(v_header, v_lines)
-  if (!dryrun) {
-    write_lines(v_lines, file = pname_in)
-  }
-  return(pname_in)
-}
 
+  if (is.null(pname_out)) {
+    pname_out <- sub("(\\.[^.]+)$", "_timechecked\\1", pname_in)
+  }
+
+  if (!dryrun) {
+    write_lines(v_lines, file = pname_out)
+  }
+  return(pname_out)
+}
 
 # define function to read TOA5 data
 import_campbell_data <- function(fname) {

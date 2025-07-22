@@ -341,8 +341,8 @@ list(
     )
   ),
   tar_target(
-    write_CP_response,
-    write_CP_reponse(CP_response, query_dates),
+    writing_CP_response,
+    write_CP_response(CP_response, query_dates),
     format = "file"
   )
 )

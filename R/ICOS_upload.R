@@ -11,22 +11,36 @@
 importCSdata <- function(filename, RetOpt = "data") {
   if (RetOpt == "info") {
     # bring in entire header of CSI TOA5 data file for metadata
-    stn.info <- scan(file = filename, nlines = 4, what = character(), sep = "\r")
+    stn.info <- scan(
+      file = filename,
+      nlines = 4,
+      what = character(),
+      sep = "\r"
+    )
     return(stn.info)
   } else {
     # second line of header contains variable names
     header <- scan(
-      file = filename, skip = 1, nlines = 1,
-      what = character(), sep = ","
+      file = filename,
+      skip = 1,
+      nlines = 1,
+      what = character(),
+      sep = ","
     )
     # bring in data
     stn.data <- read.table(
-      file = filename, skip = 4, header = FALSE,
-      na.strings = c("NAN"), sep = ","
+      file = filename,
+      skip = 4,
+      header = FALSE,
+      na.strings = c("NAN"),
+      sep = ","
     )
     names(stn.data) <- header
     # add column of R-formatted date/timestamps
-    stn.data$TIMESTAMP <- as.POSIXlt(strptime(stn.data$TIMESTAMP, "%Y-%m-%d %H:%M:%S"))
+    stn.data$TIMESTAMP <- as.POSIXlt(strptime(
+      stn.data$TIMESTAMP,
+      "%Y-%m-%d %H:%M:%S"
+    ))
     return(stn.data)
   }
 }
@@ -44,15 +58,24 @@ importCSdata <- function(filename, RetOpt = "data") {
 #'
 #' @return A character string with the full path to the output file.
 #' @export
-get_pathname_daily <- function(date_to_process, dir_out,
-                               station_code = "UK-AMo_BM_", logger_id, file_id, ext = ".dat") {
+get_pathname_daily <- function(
+  date_to_process,
+  dir_out,
+  station_code = "UK-AMo_BM_",
+  logger_id,
+  file_id,
+  ext = ".dat"
+) {
   # get the date parts of the output file name
   year <- date_to_process$year + 1900
   mon <- str_pad(date_to_process$mon + 1, 2, pad = "0")
   mday <- str_pad(date_to_process$mday, 2, pad = "0")
 
   # get the full path for writing output
-  pathname <- path(dir_out, paste0(station_code, year, mon, mday, logger_id, file_id, ext))
+  pathname <- path(
+    dir_out,
+    paste0(station_code, year, mon, mday, logger_id, file_id, ext)
+  )
   return(pathname)
 }
 
@@ -91,10 +114,16 @@ write_daily_file <- function(date_to_process, dir_in, fname_in, pname_daily) {
   # sort in time order - required because logger output is not always in order
   df <- df[order(df$TIMESTAMP), ]
   # change timestamp to a character variable with no punctuation
-  df$TIMESTAMP <- str_remove_all(as.character(format(df$TIMESTAMP, format = "%Y-%m-%d %H:%M:%S")), "[-: ]")
+  df$TIMESTAMP <- str_remove_all(
+    as.character(format(df$TIMESTAMP, format = "%Y-%m-%d %H:%M:%S")),
+    "[-: ]"
+  )
 
-  res <- try(write.csv(df,
-    file = pname_daily, eol = "\r\n", na = "NAN",
+  res <- try(write.csv(
+    df,
+    file = pname_daily,
+    eol = "\r\n",
+    na = "NAN",
     row.names = FALSE
   ))
   success <- is.null(res)
@@ -111,82 +140,29 @@ write_daily_file <- function(date_to_process, dir_in, fname_in, pname_daily) {
 #'
 #' @return Integer. Exit status from the system `curl` command (0 = success).
 #' @export
-upload_daily_file <- function(pathname,
-                              user = cred$user, password = cred$password) {
+upload_daily_file <- function(
+  pathname,
+  user = cred$user,
+  password = cred$password
+) {
   MD5 <- md5sum(pathname)
 
   # create the command from the parts
   print(paste("Uploading", path_file(pathname)))
   cmd <- paste0(
-    "curl --upload-file ", pathname, " https://", user,
-    password, "@data.icos-cp.eu/upload/etc/", MD5, "/", path_file(pathname)
+    "curl --upload-file ",
+    pathname,
+    " https://",
+    user,
+    password,
+    "@data.icos-cp.eu/upload/etc/",
+    MD5,
+    "/",
+    path_file(pathname)
   )
   # submit the command to the OS
   err <- system(cmd)
   return(err)
-}
-
-#' Remove Lines with invalid Timestamps
-#'
-#' Checks each line of a data file to ensure it starts with a valid timestamp.
-#' Removes lines that do not match the expected format.
-#'
-#' @param pname_in Character. Path to the input file.
-#' @param n_headers Integer. Number of header lines to preserve (default: 4).
-#'
-#' @return A character vector of lines (including headers) with only valid timestamped data.
-#' @export
-remove_time_errors <- function(pname_in, n_headers = 4) {
-  # Define a regular expression for a valid timestamp format
-  #                      i.e. YYYY-MM-DD hh:mm:ss
-  timestamp_regex <- '^\\"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'
-
-  # Read the header lines into a character vector
-  v_header <- read_lines(pname_in, n_max = n_headers)
-  # Read the rest of the file into a character vector, skipping the header lines
-  v_lines <- read_lines(pname_in, skip = n_headers)
-
-  # Check if every line begins with a valid timestamp
-  v_valid_time <- str_starts(v_lines, timestamp_regex)
-
-  # Print any lines that do not match the valid timestamp format
-  if (any(!v_valid_time)) {
-    print(paste0(pname_in, ": the following lines do not begin with a valid timestamp and will be removed:"))
-    print(which(!v_valid_time))
-    print(v_lines[!v_valid_time], sep = "\n")
-  } else {
-    print(paste0(pname_in, ": every line begins with a valid timestamp."))
-  }
-  # subset to only lines with a valid timestamp
-  v_lines <- v_lines[v_valid_time]
-
-  v_lines <- c(v_header, v_lines)
-  return(v_lines)
-}
-
-#' Timecheck and Clean Multiple Logger Files
-#'
-#' Applies timestamp validation and cleaning to a set of input files using `remove_time_errors()`,
-#' and writes the cleaned content to corresponding output files.
-#'
-#' @param v_fname_in Character vector. Filenames of the raw input data files.
-#' @param v_fname_tc Character vector. Filenames for the cleaned (timechecked) output files.
-#' @param dir_in Character. Directory containing the input files.
-#'
-#' @return A character vector of output filenames (`v_fname_tc`) that were written.
-#' @details This function loops over each input file, checks for valid timestamps using
-#' `remove_time_errors()`, and writes the cleaned lines to the corresponding output file.
-#' It is designed for serial execution and is suitable for use in a `{targets}` pipeline.
-#' @export
-timecheck_all_files <- function(v_fname_in, v_fname_tc, dir_in) {
-  for (i_file in seq_along(v_fname_in)) {
-    pname_in <- fs::path(dir_in, v_fname_in[i_file])
-    pname_tc <- fs::path(dir_in, v_fname_tc[i_file])
-    v_lines <- remove_time_errors(pname_in)
-    print(pname_tc)
-    readr::write_lines(v_lines, file = pname_tc)
-  }
-  return(v_fname_tc)
 }
 
 #' Timecheck and Clean Multiple Logger Files
@@ -217,10 +193,9 @@ timecheck_all_files <- function(v_fname_in, v_fname_tc, dir_in) {
   for (i_file in seq_along(v_fname_in)) {
     pname_in <- fs::path(dir_in, v_fname_in[i_file])
     pname_tc <- fs::path(dir_in, v_fname_tc[i_file])
-    v_lines <- remove_time_errors(pname_in)
-    readr::write_lines(v_lines, file = pname_tc)
+    remove_time_errors(pname_in, pname_out = pname_tc)
   }
-  return(v_fname_tc)
+  return(pname_tc)
 }
 
 #' Process and Upload a Daily Logger File
@@ -259,13 +234,27 @@ timecheck_all_files <- function(v_fname_in, v_fname_tc, dir_in) {
 #'   station_code = "UK-AMo_BM_",
 #'   v_logger_id = c("_L02"),
 #'   v_file
-process_daily_file <- function(date_to_process, i_file, dir_in, dir_out,
-                               station_code, v_logger_id, v_file_id,
-                               v_fname_tc, ext, overwrite, do_upload, force_upload) {
+process_daily_file <- function(
+  date_to_process,
+  i_file,
+  dir_in,
+  dir_out,
+  station_code,
+  v_logger_id,
+  v_file_id,
+  v_fname_tc,
+  ext,
+  overwrite,
+  do_upload,
+  force_upload
+) {
   pname_daily <- get_pathname_daily(
-    date_to_process, dir_out,
-    station_code, v_logger_id[i_file],
-    v_file_id[i_file], ext
+    date_to_process,
+    dir_out,
+    station_code,
+    v_logger_id[i_file],
+    v_file_id[i_file],
+    ext
   )
 
   file_already_existed <- file.exists(pname_daily)
@@ -273,7 +262,7 @@ process_daily_file <- function(date_to_process, i_file, dir_in, dir_out,
 
   if (!file_already_existed || overwrite) {
     message("Writing daily file: ", pname_daily)
-    written <- write_daily_file(date_to_process, dir_in, v_fname_tc[i_file], pname_daily)
+    #written <- write_daily_file(date_to_process, dir_in, v_fname_tc[i_file], pname_daily)
   }
 
   if ((!file_already_existed && do_upload) || force_upload) {
@@ -306,7 +295,8 @@ process_daily_file <- function(date_to_process, i_file, dir_in, dir_out,
 make_query <- function(file_names = NA) {
   file_names <- gsub("\\.[^.]+$", ".dat", file_names)
 
-  sparql_query <- paste0('
+  sparql_query <- paste0(
+    '
 prefix cpmeta: <http://meta.icos-cp.eu/ontologies/cpmeta/>
 prefix cpres: <http://meta.icos-cp.eu/resources/cpmeta/>
 prefix esstation: <http://meta.icos-cp.eu/resources/stations/ES_>
@@ -339,9 +329,12 @@ where {
   BIND(substr(str(?dobj), strlen(str(?dobj)) - 23) AS ?pid)
   ?dobj cpmeta:hasName ?fileName .
   ?dobj cpmeta:hasSizeInBytes ?size .
-  FILTER(regex(?fileName, "', paste(file_names, collapse = "|"), '"))
+  FILTER(regex(?fileName, "',
+    paste(file_names, collapse = "|"),
+    '"))
 }
-')
+'
+  )
 
   return(sparql_query)
 }
@@ -374,18 +367,30 @@ get_pid <- function(file_names = NA) {
   # content_type <- httr::headers(response)$`content-type`
   # cat("Content Type:", content_type, "\n")
 
-  parsed_json <- fromJSON(httr::content(response, "text"), simplifyDataFrame = T)
+  parsed_json <- fromJSON(
+    httr::content(response, "text"),
+    simplifyDataFrame = T
+  )
 
   if (length(parsed_json$results$bindings$fileName$value) == 0) {
     stop("Did not recieve any PIDs")
   }
 
-  if (length(parsed_json$results$bindings$fileName$value) != length(file_names)) {
+  if (
+    length(parsed_json$results$bindings$fileName$value) != length(file_names)
+  ) {
     warning("Missing PIDs")
   }
 
   if (length(parsed_json$results$bindings$fileName$value) > 0) {
-    return(dplyr::left_join(data.frame(filename = file_names), data.frame(filename = parsed_json$results$bindings$fileName$value, pid = parsed_json$results$bindings$pid$value), by = "filename"))
+    return(dplyr::left_join(
+      data.frame(filename = file_names),
+      data.frame(
+        filename = parsed_json$results$bindings$fileName$value,
+        pid = parsed_json$results$bindings$pid$value
+      ),
+      by = "filename"
+    ))
   }
 }
 
@@ -458,15 +463,14 @@ url_exists <- function(urls) {
 #' \dontrun{
 #' write_CP_response(response_data, as.Date(c("2025-06-26", "2025-07-02")))
 #' }
-write_CP_response <- function(response, query_dates){
+write_CP_response <- function(response, query_dates) {
   fname <- sprintf(
     "./data/CP_responses/CP_response_%s_to_%s.csv",
     format(min(query_dates), "%d-%m-%Y"),
-    format(max(query_dates), "%d-%m-%Y"))
+    format(max(query_dates), "%d-%m-%Y")
+  )
 
-  readr::write_csv(response,
-                   file = fname)
+  readr::write_csv(response, file = fname)
 
   return(fname)
-
 }
