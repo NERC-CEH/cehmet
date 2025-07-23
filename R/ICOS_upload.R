@@ -262,7 +262,12 @@ process_daily_file <- function(
 
   if (!file_already_existed || overwrite) {
     message("Writing daily file: ", pname_daily)
-    #written <- write_daily_file(date_to_process, dir_in, v_fname_tc[i_file], pname_daily)
+    written <- write_daily_file(
+      date_to_process,
+      dir_in,
+      v_fname_tc[i_file],
+      pname_daily
+    )
   }
 
   if ((!file_already_existed && do_upload) || force_upload) {
