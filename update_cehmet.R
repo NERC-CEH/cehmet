@@ -1,4 +1,4 @@
-# here::i_am("update_cehmet.R")
+here::i_am("update_cehmet.R")
 library(here)
 library(fs)
 library(targets)
