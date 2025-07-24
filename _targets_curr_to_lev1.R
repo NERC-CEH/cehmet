@@ -310,7 +310,7 @@ list(
       date_to_process = param_grid$date_to_process,
       i_file = param_grid$i_file,
       dir_in = dir_in,
-      dir_out = dir_out,
+      dir_out = paste0(dir_out, "/UK-AMO/uploaded_to"),
       station_code = station_code,
       v_logger_id = v_logger_id,
       v_file_id = v_file_id,

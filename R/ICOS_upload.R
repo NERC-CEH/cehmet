@@ -107,8 +107,8 @@ write_daily_file <- function(date_to_process, dir_in, fname_in, pname_daily) {
   # subset using the lagged values
   df <- subset(
     df,
-    TIMESTAMP_lagged$year == year(date_to_process) &
-      TIMESTAMP_lagged$yday == yday(date_to_process)
+    year(TIMESTAMP_lagged) == year(date_to_process) &
+      yday(TIMESTAMP_lagged) == yday(date_to_process)
   )
   df$TIMESTAMP_lagged <- NULL # and remove it
   # sort in time order - required because logger output is not always in order
