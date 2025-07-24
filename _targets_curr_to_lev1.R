@@ -274,6 +274,17 @@ list(
     ))
   ),
   tar_target(
+    log_dates,
+    {
+      cat("---- Diagnostic Output ----\n")
+      cat("Sys.Date():", Sys.Date(), "\n")
+      cat("v_date_to_process:\n")
+      print(v_date_to_process)
+      cat("---------------------------\n")
+      TRUE
+    }
+  ),
+  tar_target(
     v_fname_in,
     paste0("UK-AMo_BM", v_logger_id, v_file_id, ".dat")
   ),
