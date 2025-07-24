@@ -41,7 +41,11 @@ remove_time_errors <- function(
   v_lines <- c(v_header, v_lines)
 
   if (is.null(pname_out)) {
-    pname_out <- sub("(\\.[^.]+)$", "_timechecked\\1", pname_in)
+    pname_out <- ifelse(
+      grepl("_timechecked\\.[^.]+$", pname_in),
+      pname_in,
+      sub("(\\.[^.]+)$", "_timechecked\\1", pname_in)
+    )
   }
 
   if (!dryrun) {
