@@ -269,19 +269,21 @@ list(
     v_date_to_process,
     as.POSIXlt(seq(
       from = first_date_to_process,
-      length.out = n_days,
+      to = as.POSIXlt(Sys.Date() - 1),
       by = "days"
     ))
   ),
   tar_target(
     log_dates,
     {
-      cat("---- Diagnostic Output ----\n")
-      cat("Sys.Date():", Sys.Date(), "\n")
-      cat("v_date_to_process:\n")
-      print(v_date_to_process)
-      cat("---------------------------\n")
-      TRUE
+      log_output <- capture.output({
+        cat("---- Diagnostic Output ----\n")
+        cat("Sys.Date():", Sys.Date(), "\n")
+        cat("v_date_to_process:\n")
+        print(v_date_to_process)
+        cat("---------------------------\n")
+      })
+      paste(log_output, collapse = "\n")
     }
   ),
   tar_target(
