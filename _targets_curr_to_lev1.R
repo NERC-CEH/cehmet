@@ -269,7 +269,7 @@ list(
     v_date_to_process,
     as.POSIXlt(seq(
       from = first_date_to_process,
-      to = as.POSIXlt(Sys.Date() - 1),
+      length.out = n_days + 1,
       by = "days"
     ))
   ),
