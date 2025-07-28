@@ -3,6 +3,7 @@ library(here)
 library(targets)
 library(future)
 library(data.table)
+library(yaml)
 future::plan("multicore")
 
 # Use UTC time throughout
@@ -12,21 +13,27 @@ Sys.setenv(TZ = "UTC")
 
 # Packages that your targets need for their tasks.
 v_packages <- c(
-  "here",
-  "fs",
-  "units",
   "data.table",
-  "stringr",
   "ecmwfr",
-  "powerjoin",
-  "stars",
-  "humidity",
-  "ggplot2",
+  "fs",
   "ggforce",
+  "ggplot2",
+  "here",
+  "humidity",
+  "httr",
+  "jsonlite",
+  "lubridate",
+  "mgcv",
+  "openair",
+  "powerjoin",
+  "purrr",
+  "RCurl",
   "readr",
   "readxl",
-  "openair",
-  "mgcv"
+  "stars",
+  "stringr",
+  "tools",
+  "units"
 )
 
 # Set target options:
@@ -40,6 +47,22 @@ dir_in <- here("data-raw/UK-AMO/current")
 dir_out <- "/gws/nopw/j04/eddystore/public"
 this_year <- as.character(year(Sys.Date()))
 
+cred <- yaml.load_file(here("scripts/credentials.yml"))
+do_upload <- TRUE
+force_upload <- FALSE
+overwrite <- FALSE
+station_code <- "UK-AMo_BM_" # actually includes "BM" for bio-met data
+ext <- ".dat"
+v_logger_id <- c("_L02", "_L03", "_L03", "_L04", "_L04", "_L04", "_L04", "_L05")
+v_file_id <- c("_F01", "_F01", "_F02", "_F01", "_F02", "_F04", "_F05", "_F01")
+
+# ICOS UPLOAD: process n_days prior to ending_n_days_ago, usually yesterday (= 0)
+n_days <- 14 # number of days to process
+ending_n_days_ago <- 0 # 0 = yesterday
+
+# Query the Carbon Portal
+n_days_to_query <- 7
+
 list(
   # variable names to monitor for changes
   tar_target(
@@ -52,7 +75,6 @@ list(
     here("_targets_hist_to_lev1/objects/l_lev1"),
     format = "file"
   ),
-
   tar_target(
     v_names_for_db,
     read.table(fname_names_db, stringsAsFactors = FALSE)$V1
@@ -237,6 +259,105 @@ list(
       site_id = "UK-AMO",
       level = "lev1"
     )
+  ),
+  # start of ICOS upload
+  tar_target(
+    first_date_to_process,
+    as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days),
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    v_date_to_process,
+    as.POSIXlt(seq(
+      from = first_date_to_process,
+      length.out = n_days + 1,
+      by = "days"
+    ))
+  ),
+  tar_target(
+    log_dates,
+    {
+      log_output <- capture.output({
+        cat("---- Diagnostic Output ----\n")
+        cat("Sys.Date():", Sys.Date(), "\n")
+        cat("v_date_to_process:\n")
+        print(v_date_to_process)
+        cat("---------------------------\n")
+      })
+      paste(log_output, collapse = "\n")
+    }
+  ),
+  tar_target(
+    v_fname_in,
+    paste0("UK-AMo_BM", v_logger_id, v_file_id, ".dat")
+  ),
+  tar_target(
+    v_fname_tc,
+    paste0(path_ext_remove(v_fname_in), "_timechecked.dat")
+  ),
+  tar_target(
+    tc_output,
+    timecheck_all_files(v_fname_in, v_fname_tc, dir_in),
+    format = "file"
+  ),
+  tar_target(
+    param_grid,
+    expand.grid(
+      date_to_process = v_date_to_process,
+      i_file = seq_along(v_fname_in)
+    )
+  ),
+  tar_target(
+    uploaded_files,
+    process_daily_file(
+      date_to_process = param_grid$date_to_process,
+      i_file = param_grid$i_file,
+      dir_in = dir_in,
+      dir_out = paste0(dir_out, "/UK-AMO/uploaded_to_icos"),
+      station_code = station_code,
+      v_logger_id = v_logger_id,
+      v_file_id = v_file_id,
+      v_fname_tc = v_fname_tc,
+      ext = ext,
+      overwrite = overwrite,
+      do_upload = do_upload,
+      force_upload = force_upload
+    ),
+    pattern = map(param_grid)
+  ),
+
+  # Querying the CP to check successful upload.
+  tar_target(
+    query_dates,
+    as.POSIXlt(seq(
+      as.POSIXlt(Sys.Date() - n_days_to_query),
+      as.POSIXlt(Sys.Date() - 1),
+      by = "days"
+    ))
+  ),
+  tar_target(
+    files_to_query,
+    basename(c(sapply(
+      query_dates,
+      get_pathname_daily,
+      dir_out,
+      station_code,
+      v_logger_id,
+      v_file_id,
+      ext
+    )))
+  ),
+  tar_target(
+    CP_response,
+    cbind(
+      get_pid(files_to_query),
+      data.frame(url_exists = query_CP(files_to_query))
+    )
+  ),
+  tar_target(
+    writing_CP_response,
+    write_CP_response(CP_response, query_dates),
+    format = "file"
   )
 )
 
