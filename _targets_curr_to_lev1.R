@@ -59,6 +59,7 @@ v_file_id <- c("_F01", "_F01", "_F02", "_F01", "_F02", "_F04", "_F05", "_F01")
 # ICOS UPLOAD: process n_days prior to ending_n_days_ago, usually yesterday (= 0)
 n_days <- 14 # number of days to process
 ending_n_days_ago <- 0 # 0 = yesterday
+first_date_to_process <- as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days)
 
 # Query the Carbon Portal
 n_days_to_query <- 7
@@ -261,11 +262,6 @@ list(
     )
   ),
   # start of ICOS upload
-  tar_target(
-    first_date_to_process,
-    as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days),
-    cue = tar_cue(mode = "always")
-  ),
   tar_target(
     v_date_to_process,
     as.POSIXlt(seq(
