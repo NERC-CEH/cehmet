@@ -263,7 +263,8 @@ list(
   # start of ICOS upload
   tar_target(
     first_date_to_process,
-    as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days)
+    as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days),
+    cue = tar_cue(mode = "always")
   ),
   tar_target(
     v_date_to_process,
