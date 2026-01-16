@@ -35,7 +35,7 @@ tar_option_set(
 tar_source()
 
 # constants
-dir_out <- "/gws/nopw/j04/eddystore/public"
+dir_out <- "/gws/ssde/j25a/eddystore/public"
 
 list(
   # variable names to monitor for changes
@@ -154,7 +154,7 @@ list(
     logger_to_lev0(
       dt_log,
       v_names_for_db,
-      fname_out = "/gws/nopw/j04/eddystore/public/UK-AMO/UK-AMO_BM_post2022.rds"
+      fname_out = "/gws/ssde/j25a/eddystore/public/UK-AMO/UK-AMO_BM_post2022.rds"
     )
   ),
   tar_target(

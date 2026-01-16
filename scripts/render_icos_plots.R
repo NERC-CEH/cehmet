@@ -1,6 +1,6 @@
 library(rmarkdown)
 render(
-  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  "/gws/ssde/j25a/eddystore/cehmet/scripts/plot_UK-AMo_met_JC.Rmd",
   #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_year.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_year.html",
   params = list(
@@ -11,7 +11,7 @@ render(
   )
 )
 render(
-  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  "/gws/ssde/j25a/eddystore/cehmet/scripts/plot_UK-AMo_met_JC.Rmd",
   #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_month.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_month.html",
   params = list(
@@ -22,7 +22,7 @@ render(
   )
 )
 render(
-  "/gws/nopw/j04/ceh_generic/amo_met/plot_UK-AMo_met.Rmd",
+  "/gws/ssde/j25a/eddystore/cehmet/scripts/plot_UK-AMo_met_JC.Rmd",
   #  output_file = "/gws/nopw/j04/dare_uk/public/plevy/UK-AMo/plot_UK-AMo_week.html",
   output_file = "/gws/nopw/j04/ukem/public/UK-AMo/plot_UK-AMo_week.html",
   params = list(

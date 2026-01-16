@@ -6,17 +6,83 @@ get_logger_filenames <- function(
   return(v_fname)
 }
 
+# Hybrid function that looks in both current and archive directories
+# Useful for handling year boundaries where data spans multiple files
+get_logger_filenames_hybrid <- function(
+  fname_pattern = "*Metmast_MainMet_30min*",
+  dir_current = here("data-raw/UK-AMO/current"),
+  dir_archive = here("data-raw/UK-AMO/archive"),
+  start.date = NULL
+) {
+  # Always check current directory first
+  v_fname_current <- fs::dir_ls(dir_current, glob = fname_pattern)
+
+  # Check archive directory
+  v_fname_archive <- fs::dir_ls(dir_archive, glob = fname_pattern)
+
+  # If no start.date specified, return all files from both directories
+  if (is.null(start.date)) {
+    return(c(v_fname_archive, v_fname_current))
+  }
+
+  # If start.date specified, read a sample from current file to check date range
+  if (length(v_fname_current) > 0) {
+    # Read just the header and first few data lines to check date range
+    current_file <- v_fname_current[1]
+    dt_sample <- tryCatch(
+      {
+        fread(current_file, skip = 4, nrows = 10, header = FALSE)
+      },
+      error = function(e) NULL
+    )
+
+    if (!is.null(dt_sample)) {
+      # Check first timestamp in current file
+      first_timestamp <- dt_sample[[1]][1]
+
+      # If current file starts after our required start.date, include archive files
+      if (as.POSIXct(first_timestamp) > as.POSIXct(start.date)) {
+        message(
+          "Current file starts at ",
+          first_timestamp,
+          " but need data from ",
+          start.date,
+          ". Including archive files."
+        )
+        return(c(v_fname_archive, v_fname_current))
+      }
+    }
+  }
+
+  # Current file covers the required period, just use it
+  return(v_fname_current)
+}
+
 process_logger_files <- function(
   v_fname = NULL,
   fname_pattern = NULL,
   dir_in = NULL,
   check_time = TRUE,
   avg.time = "30 min",
-  start.date = "2022-01-01 00:00:00"
+  start.date = "2022-01-01 00:00:00",
+  use_hybrid = FALSE,
+  dir_current = NULL,
+  dir_archive = NULL
 ) {
   # if not supplied, get the file names
   if (is.null(v_fname)) {
-    v_fname <- get_logger_filenames(fname_pattern, dir_in)
+    if (use_hybrid && !is.null(dir_current) && !is.null(dir_archive)) {
+      # Use hybrid approach that checks both current and archive
+      v_fname <- get_logger_filenames_hybrid(
+        fname_pattern = fname_pattern,
+        dir_current = dir_current,
+        dir_archive = dir_archive,
+        start.date = start.date
+      )
+    } else {
+      # Use original approach
+      v_fname <- get_logger_filenames(fname_pattern, dir_in)
+    }
   }
 
   if (check_time) {
@@ -42,7 +108,7 @@ process_logger_files <- function(
 
 subset_by_year <- function(
   l_lev,
-  dir_out = "/gws/nopw/j04/eddystore/public",
+  dir_out = "/gws/ssde/j25a/eddystore/public",
   site_id = "UK-AMO",
   level = "lev0"
 ) {
