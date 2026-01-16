@@ -14,6 +14,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.until12apr }} # `until12apr` is a secret that contains a PAT
 
       - name: Install
         uses: posit-dev/setup-air@v1
