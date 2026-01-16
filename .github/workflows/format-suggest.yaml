@@ -15,8 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.until12apr }} # `until12apr` is a secret that contains a PAT
-
+          token: ${{ secrets.until12apr }} # `until12apr` is a secret that contains your PAT
       - name: Install
         uses: posit-dev/setup-air@v1
 
@@ -26,7 +25,7 @@ jobs:
       - name: Suggest
         uses: reviewdog/action-suggester@v1
         with:
-          github_token: ${{ secrets.until12apr }} # `until12apr` is a secret that contains a PAT        
+          github_token: ${{ secrets.until12apr }} # `until12apr` is a secret that contains your PAT
           level: error
           fail_level: error
           tool_name: air
