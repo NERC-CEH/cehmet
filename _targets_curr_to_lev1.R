@@ -14,7 +14,7 @@ Sys.setenv(TZ = "UTC")
 # Packages that your targets need for their tasks.
 v_packages <- c(
   "data.table",
-  "ecmwfr",
+  # "ecmwfr",  # Not used in current workflow, but requires libsecret-1 system library
   "fs",
   "ggforce",
   "ggplot2",
@@ -30,6 +30,7 @@ v_packages <- c(
   "RCurl",
   "readr",
   "readxl",
+  "rmarkdown",
   "stars",
   "stringr",
   "tools",
@@ -44,7 +45,8 @@ tar_source()
 
 # constants
 dir_in <- here("data-raw/UK-AMO/current")
-dir_out <- "/gws/nopw/j04/eddystore/public"
+dir_archive <- here("data-raw/UK-AMO/archive")
+dir_out <- "/gws/ssde/j25a/eddystore/public"
 this_year <- as.character(year(Sys.Date()))
 
 cred <- yaml.load_file(here("scripts/credentials.yml"))
@@ -57,7 +59,8 @@ v_logger_id <- c("_L02", "_L03", "_L03", "_L04", "_L04", "_L04", "_L04", "_L05")
 v_file_id <- c("_F01", "_F01", "_F02", "_F01", "_F02", "_F04", "_F05", "_F01")
 
 # ICOS UPLOAD: process n_days prior to ending_n_days_ago, usually yesterday (= 0)
-n_days <- 14 # number of days to process
+#n_days <- 14 # number of days to process
+n_days <- 30 # number of days to process - increased to capture 2026 data
 ending_n_days_ago <- 0 # 0 = yesterday
 first_date_to_process <- as.POSIXlt(Sys.Date() - ending_n_days_ago - n_days)
 
@@ -85,9 +88,11 @@ list(
   # they are re-run if they change.
   tar_target(
     v_fname_mm,
-    get_logger_filenames(
+    get_logger_filenames_hybrid(
       fname_pattern = "*Metmast_MainMet_30min*",
-      dir_in = dir_in
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
     ),
     format = "file"
   ),
@@ -100,7 +105,12 @@ list(
   ),
   tar_target(
     v_fname_L04_F01,
-    get_logger_filenames(fname_pattern = "*_L04_F01*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L04_F01*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -112,7 +122,12 @@ list(
   ),
   tar_target(
     v_fname_L04_F02,
-    get_logger_filenames(fname_pattern = "*_L04_F02*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L04_F02*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -124,7 +139,12 @@ list(
   ),
   tar_target(
     v_fname_L04_F04,
-    get_logger_filenames(fname_pattern = "*_L04_F04*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L04_F04*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -136,7 +156,12 @@ list(
   ),
   tar_target(
     v_fname_L04_F05,
-    get_logger_filenames(fname_pattern = "*_L04_F05*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L04_F05*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -148,7 +173,12 @@ list(
   ),
   tar_target(
     v_fname_L02_F01,
-    get_logger_filenames(fname_pattern = "*_L02_F01*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L02_F01*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -160,7 +190,12 @@ list(
   ),
   tar_target(
     v_fname_L03_F01,
-    get_logger_filenames(fname_pattern = "*_L03_F01*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L03_F01*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -172,7 +207,12 @@ list(
   ),
   tar_target(
     v_fname_L03_F02,
-    get_logger_filenames(fname_pattern = "*_L03_F02*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L03_F02*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -184,7 +224,12 @@ list(
   ),
   tar_target(
     v_fname_L05_F01,
-    get_logger_filenames(fname_pattern = "*_L05_F01*", dir_in = dir_in),
+    get_logger_filenames_hybrid(
+      fname_pattern = "*_L05_F01*",
+      dir_current = dir_in,
+      dir_archive = dir_archive,
+      start.date = paste0(this_year, "-01-01 00:00:00")
+    ),
     format = "file"
   ),
   tar_target(
@@ -221,7 +266,7 @@ list(
     logger_to_lev0(
       dt_log,
       v_names_for_db,
-      fname_out = "/gws/nopw/j04/eddystore/public/UK-AMO/UK-AMO_BM_2025.rds"
+      fname_out = "/gws/ssde/j25a/eddystore/public/UK-AMO/UK-AMO_BM_2025.rds"
     )
   ),
   tar_target(
@@ -230,7 +275,11 @@ list(
   ),
   tar_target(
     l_lev0_sub,
-    subset_by_date(l_lev0, start_date = "2025-01-01", end_date = "2026-01-01")
+    subset_by_date(
+      l_lev0,
+      start_date = paste0(this_year, "-01-01"),
+      end_date = as.character(Sys.Date() + 1) # tomorrow's date to include all of today
+    )
   ),
   tar_target(
     l_lev1_curr,
@@ -266,7 +315,7 @@ list(
     v_date_to_process,
     as.POSIXlt(seq(
       from = first_date_to_process,
-      length.out = n_days + 1,
+      length.out = n_days,
       by = "days"
     ))
   ),
@@ -353,6 +402,62 @@ list(
   tar_target(
     writing_CP_response,
     write_CP_response(CP_response, query_dates),
+    format = "file"
+  ),
+
+  #-------------------------------------------------------------------
+  # JC - Render plots for public website - year, month, and week views
+  # Please check this makes sense to include here
+  #-------------------------------------------------------------------
+  tar_target(
+    plot_year,
+    {
+      rmarkdown::render(
+        here("scripts/plot_UK-AMo_met_JC.Rmd"),
+        output_file = "plot_UK-AMo_year.html",
+        output_dir = "/gws/nopw/j04/ukem/public/UK-AMo",
+        params = list(
+          n_days = 365,
+          dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
+          first_time_this_year = FALSE, # auto-detected by script
+          validate_mainmet = TRUE
+        )
+      )
+    },
+    format = "file"
+  ),
+  tar_target(
+    plot_month,
+    {
+      rmarkdown::render(
+        here("scripts/plot_UK-AMo_met_JC.Rmd"),
+        output_file = "plot_UK-AMo_month.html",
+        output_dir = "/gws/nopw/j04/ukem/public/UK-AMo",
+        params = list(
+          n_days = 31,
+          dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
+          first_time_this_year = FALSE, # auto-detected by script
+          validate_mainmet = FALSE
+        )
+      )
+    },
+    format = "file"
+  ),
+  tar_target(
+    plot_week,
+    {
+      rmarkdown::render(
+        here("scripts/plot_UK-AMo_met_JC.Rmd"),
+        output_file = "plot_UK-AMo_week.html",
+        output_dir = "/gws/nopw/j04/ukem/public/UK-AMo",
+        params = list(
+          n_days = 7,
+          dir_out_mainmet = "/gws/nopw/j04/ukem/public/UK-AMo",
+          first_time_this_year = FALSE, # auto-detected by script
+          validate_mainmet = TRUE
+        )
+      )
+    },
     format = "file"
   )
 )

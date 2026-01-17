@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=update_amo
-#SBATCH --time=00:80:00
+#SBATCH --time=04:00:00
 #SBATCH --mem=8000
 #SBATCH --account=ceh_generic
 #SBATCH --partition=standard
@@ -13,6 +13,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/apps/jasmin/j
 # #/gws/nopw/j04/ceh_generic/amo_met/data-raw/era5_update.sh
 # R CMD BATCH --no-restore --no-save /gws/nopw/j04/ceh_generic/amo_met/Logger_Data_Update.R /gws/nopw/j04/ceh_generic/amo_met/Logger_Data_Update.Rout
 # R CMD BATCH --no-restore --no-save /gws/nopw/j04/ceh_generic/amo_met/icos_uploader.R     /gws/nopw/j04/ceh_generic/amo_met/icos_uploader.Rout
-R CMD BATCH --no-restore --no-save /gws/nopw/j04/ceh_generic/amo_met/render_icos_plots.R /gws/nopw/j04/ceh_generic/amo_met/render_icos_plots.Rout
-cd /gws/nopw/j04/ceh_generic/amo_met
-R CMD BATCH --no-restore --no-save /gws/nopw/j04/eddystore/cehmet/update_cehmet.R        /gws/nopw/j04/eddystore/cehmet/update_cehmet.Rout
+# R CMD BATCH --no-restore --no-save /gws/nopw/j04/ceh_generic/amo_met/render_icos_plots.R /gws/nopw/j04/ceh_generic/amo_met/render_icos_plots.Rout
+
+cd /gws/ssde/j25a/eddystore/cehmet
+R CMD BATCH --no-restore --no-save /gws/ssde/j25a/eddystore/cehmet/update_cehmet.R        /gws/ssde/j25a/eddystore/cehmet/update_cehmet.Rout
+# Plotting is now integrated into the targets workflow in update_cehmet.R
+# R CMD BATCH --no-restore --no-save /gws/ssde/j25a/eddystore/cehmet/scripts/render_icos_plots.R /gws/ssde/j25a/eddystore/cehmet/scripts/render_icos_plots.Rout
+

@@ -27,7 +27,7 @@ tar_option_set(
 tar_source()
 
 # constants
-dir_out <- "/gws/nopw/j04/eddystore/public"
+dir_out <- "/gws/ssde/j25a/eddystore/public"
 
 list(
   # file names to monitor for changes
@@ -44,7 +44,7 @@ list(
   ),
   tar_target(
     fname_era5,
-    "/gws/nopw/j04/eddystore/era5met/data-raw/era5/N55.75_W03.25/monthly/dt.csv",
+    "/gws/ssde/j25a/eddystore/era5met/data-raw/era5/N55.75_W03.25/monthly/dt.csv",
     format = "file"
   ),
 
@@ -82,7 +82,7 @@ list(
     logger_to_lev0(
       dt_lev0,
       v_names_for_db,
-      fname_out = "/gws/nopw/j04/eddystore/public/UK-AMO/UK-AMO_BM_pre2022.csv"
+      fname_out = "/gws/ssde/j25a/eddystore/public/UK-AMO/UK-AMO_BM_pre2022.csv"
     )
   ),
   tar_target(
