@@ -26,6 +26,6 @@ jobs:
         uses: reviewdog/action-suggester@v1
         with:
           github_token: ${{ secrets.UNTIL12APR }} # `UNTIL12APR` is a secret that contains a PAT
-          level: error
-          fail_level: error
+          level: warning
+          fail_level: warning
           tool_name: air
