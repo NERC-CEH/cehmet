@@ -1,4 +1,5 @@
 here::i_am("run_interactive.R")
+sink("run_interactive_log.txt", append = FALSE, split = TRUE)
 library(here)
 library(fs)
 library(targets)
@@ -37,3 +38,5 @@ test_plot <- function(l_lev1) {
   return(p)
 }
 test_plot(l_lev1)
+
+sink()
